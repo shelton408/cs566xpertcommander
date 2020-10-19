@@ -82,5 +82,15 @@ class State:
     def eval(self):
         print('evaluate the state')
 
-    def apply_action(self, action):
-        print('return new state when action has been applied')
+    # for now, just a card and target deck
+    # implement hints at some point
+    # apply action and return new set of legal_moves based on that action
+    # must take legal parameters (i.e. parameters must be checked to be legal before calling this method)
+    def apply_action(self, hand, card, deck, moves):
+        self.decks[deck] = hand[card]
+        hand = np.delete(hand, card)
+        moves = np.delete(moves, card, axis=0)
+        for c in range(len(hand)):
+            moves[c, deck] = self.is_legal_move(hand[c], self.decks[deck], deck > 1)
+
+        return hand, moves

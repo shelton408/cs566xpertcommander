@@ -13,13 +13,16 @@ class Game:
     Lets play The Game.
     """
 
-    def __init__(self, num_players):
+    def __init__(self, num_players, num_humans=0):
         self.state = State(num_players)
         self.players = []
+        current_humans = 0
         for _ in range(num_players):
             handsize = HANDSIZES[str(3 if num_players > 2 else num_players)]
             hand = self.state.draw(handsize)
-            self.players.append(Player(hand))
+            new_player = Player(hand, current_humans < num_humans)
+            current_humans += 1
+            self.players.append(new_player)
 
     def play(self):
 
@@ -35,5 +38,5 @@ class Game:
 
 # for testing purposes, can remove whenever
 if __name__ == '__main__':
-    new_game = Game(1)
+    new_game = Game(num_players=1, num_humans=1)
     new_game.play()
