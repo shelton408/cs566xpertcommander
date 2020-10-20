@@ -34,7 +34,7 @@ class Player:
                 return state
 
 
-            print('take the turn')
+            print('Player {}\'s turn'.format(str(self.number)))
             print(self.hand)
             print(state)
             print('enter index of card followed by index of deck to play it on')
