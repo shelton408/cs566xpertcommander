@@ -13,30 +13,45 @@ class Game:
     Lets play The Game.
     """
 
-    def __init__(self, num_players, num_humans=0):
+    def __init__(self, num_players):
         self.state = State(num_players)
         self.players = []
-        current_humans = 0
-        for _ in range(num_players):
+        for num in range(num_players):
             handsize = HANDSIZES[str(3 if num_players > 2 else num_players)]
             hand = self.state.draw(handsize)
-            new_player = Player(hand, current_humans < num_humans)
-            current_humans += 1
+            new_player = Player(num, hand)
             self.players.append(new_player)
 
+
+    def __str__(self):
+        players_str = ''
+        for p in self.players:
+            players_str += (str(p) + '\n')
+
+        return '{}\n{}'.format(str(self.state), players_str)
+
+
     def play(self):
-
-        # could this be for current_player in self.players?
-        # or is turn_index necessary for some computation later?
-
-        while self.state:
+        '''
+        The game loop itself. It loops through players until game is over.
+        '''
+        while not self.isGameOver():
             for current_player in self.players:
-                self.state = current_player.take_turn(self.state)
+                if not self.isGameOver() and current_player.can_play():  # Player can have no cards on hand so it skips him
+                    self.state = current_player.take_turn(self.state)
 
-        print(self.state)
+            print(self)
+        print('\nGAME OVER\n')
 
-
-# for testing purposes, can remove whenever
-if __name__ == '__main__':
-    new_game = Game(num_players=1, num_humans=1)
-    new_game.play()
+    def isGameOver(self):
+        '''
+        Boolean function that checks if the game is over.
+        Either by state being invalid (game lost) or all cards been played (game won)
+        '''
+        if self.state.isEndState\
+                or (len(self.state.drawpile) == 0 and all([len(p.hand) == 0 for p in self.players])):
+            print('GAME is OVER')
+            print(self.state.isEndState)
+            return True
+        else:
+            return False

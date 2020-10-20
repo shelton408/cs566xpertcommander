@@ -6,43 +6,60 @@ class Player:
     Human player class.
     """
 
-    def __init__(self, hand, isHuman=False):
+    def __init__(self, number, hand):
         self.hand = hand
-        self.isHuman = isHuman
+        self.number = number
+
+    def __str__(self):
+        return 'Player {} w. hand {}'.format(str(self.number), self.hand)
+
+    def can_play(self):
+        return len(self.hand) > 0
 
     def take_turn(self, state):
-        legal_moves = state.get_legal_moves(self.hand)
+        '''
+        Player takes it turn by playing at least 'minMoveSize' number of times.
+        If that isn't possible then make state an endState and return it.
+        Otherwise ask player for action and apply it to the state.
+        :param state: The current state that players action will be applied to.
+        :return: The next state after changes have been applied.
+        '''
         actions_taken = 0
-        while True:
-            if self.isHuman:
-                print('take the turn')
-                print(self.hand)
-                print(state)
-                print('enter index of card followed by index of deck to play it on')
-                if actions_taken >= state.minMoveSize:
-                    print('or enter end to end turn')
-                move = input()
+        is_turn_over = False
+        while not is_turn_over:
 
-                # if ending turn draw number of cards played
-                if actions_taken >= state.minMoveSize:
-                    if move == 'end':
-                        self.hand = np.append(self.hand, state.draw(actions_taken))
-                        break
+            if not state.is_playable(self.hand):
+                if actions_taken < state.minMoveSize:
+                    state.isEndState = True
+                return state
 
+
+            print('take the turn')
+            print(self.hand)
+            print(state)
+            print('enter index of card followed by index of deck to play it on')
+            if actions_taken >= state.minMoveSize:
+                print('or enter \'end\' to end the turn')
+
+            move = input()
+
+            # if ending turn draw the same number of cards as played
+            if actions_taken >= state.minMoveSize and move == 'end':
+                self.hand = np.append(self.hand, state.draw(actions_taken))
+                is_turn_over = True
+            else:
                 try:
-                    card, deck = map(int, move.split(' '))
-                except:
-                    print('that is an invalid move')
+                    card_index, deck_index = map(int, move.split(' '))
+                except ValueError:
+                    print('Not a valid input')
                     continue
 
-                if legal_moves[card, deck]:
-                    self.hand, legal_moves = state.apply_action(self.hand, card, deck, legal_moves)
+                if state.is_legal_move(self.hand[card_index], deck_index):
+                    state.play_card(self.hand[card_index], deck_index)
+                    self.hand = np.delete(self.hand, card_index)
                     actions_taken += 1
                 else:
                     # maybe make this more descriptive at some point
                     print('that is an invalid move')
 
-        # pick a legal move, play it reevaluate turn
-        # maybe find some method of only reevaluating decks which have changed based on previous action
-        # or have the take_action method return a set of new legal moves
-        # need some way to decide when done with turn, maybe (N,D+1) where last index is ending turn or something
+        return state
