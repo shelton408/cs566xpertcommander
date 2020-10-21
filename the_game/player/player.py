@@ -31,6 +31,8 @@ class Player:
             if not state.is_playable(self.hand):
                 if actions_taken < state.minMoveSize:
                     state.isEndState = True
+                # if turn is no longer playable, but game is over player must draw remaining cards
+                self.hand = np.append(self.hand, state.draw(actions_taken))
                 return state
 
 
