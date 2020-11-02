@@ -1,4 +1,6 @@
 # Final Project
+<img src="./the_game.jpg" alt="The Game"
+	title="The Game" width="200" height="150" />
 
 See example runs in files:
 - _human_player_game.py_ for a single/multiplayer human game
@@ -13,4 +15,5 @@ File structure is as follows:
 
 ## Todos:
 - [ ] Create DQN agent in _./the_game/agents/_
+- [ ] Create _hint_ evaluation. (The priority of decks for each player)
 - [ ] ...
