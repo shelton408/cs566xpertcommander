@@ -152,3 +152,9 @@ class Game:
         Returns: (number of cards in drawpile that can be played) / (number of cards in drawpile)
         '''
         return len([c for c in self.state['drawpile'] if self._can_be_played(c)]) / len(self.state['drawpile'])
+
+    def num_playable(self):
+        '''
+        returns raw # of cards that can be played
+        '''
+        return len([c for c in self.state['drawpile'] if self._can_be_played(c)])

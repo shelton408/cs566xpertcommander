@@ -128,21 +128,23 @@ class Trainer():
             done = False
             state, prev_obs = self.reset_game()
             prev_obs = torch.tensor(prev_obs, dtype=torch.float32)
-
+            prev_eval = self.env.game.num_playable() #used to calculate reward
             eps_reward = 0.
             start_time = time.time()
-            
+            deck_end_sizes = []
             ## Collect rollouts
             for step in range(self.rollouts.rollout_size):
                 if done:
                     # # Store episode statistics
                     avg_eps_reward.update(eps_reward)
+                    deck_end_sizes.append(len(self.env.game.state['drawpile']))
                     # if 'success' in info: 
                     #     avg_success_rate.update(int(info['success']))
 
                     # Reset Environment
                     state, obs = self.reset_game()
                     obs = torch.tensor(obs, dtype=torch.float32)
+                    prev_eval = self.env.game.num_playable() #used to calculate reward
                     eps_reward = 0.
                 else:
                     obs = prev_obs
@@ -155,7 +157,12 @@ class Trainer():
                 state, next_player = self.env.step(action)
                 action_tensor = torch.tensor((action),dtype=torch.float32)
                 obs = self.parse_state(state)
-                reward = self.env.game.drawpile_eval()
+
+                #if our play reduces us by more than 5 playable cards, negatives reward, else positive
+                eval = self.env.game.num_playable()
+                reward = (eval - prev_eval)/5 + 1
+                prev_eval = eval
+
                 done = self.env.game.is_over()
 
 
@@ -187,8 +194,9 @@ class Trainer():
             print('it {}: avgR: {:.3f} -- rollout_time: {:.3f}sec -- update_time: {:.3f}sec'.format(j, avg_eps_reward.avg, 
                                                                                                     rollout_time.avg, 
                                                                                                     update_time.avg))
-            if j % self.params['plotting_iters'] == 0 and j != 0:
-                plot_learning_curve(rewards, success_rate, params.num_updates)
-                log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
+            # if j % self.params['plotting_iters'] == 0 and j != 0:
+            #     plot_learning_curve(rewards, success_rate, params.num_updates)
+            #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
+            print('Deck end sizes:{}'.format(deck_end_sizes))
         return rewards, success_rate
 
