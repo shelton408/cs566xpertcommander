@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import logging
 
 HANDSIZES = {
     '1': 8,
@@ -116,6 +117,7 @@ class Game:
             self.state['num_moves_taken'] += 1
             self.get_all_legal_actions()
             self.state['last_action'] = action
+            logging.info(' State for player {}: {}\nEvaluation: {}\nLast Card(s) played{}\n'.format(self.state['current_player'], str(self.state), str(self.drawpile_eval()), action))
             return (self.state, self.state['current_player'])
 
 

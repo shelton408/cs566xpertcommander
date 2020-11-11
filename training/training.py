@@ -4,6 +4,7 @@ import torch.nn as nn
 import logging
 from collections.abc import Iterable
 import time
+from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 
 sys.path.append('../')
 from cs556xpertcommander.the_game import Env
@@ -76,6 +77,22 @@ class RolloutStorage():
         for step in reversed(range(self.last_done+1)):
             self.returns[step] = self.rewards[step] + \
                                 self.returns[step + 1] * gamma * (1 - self.done[step])
+    
+    def batch_sampler(self, batch_size, get_old_log_probs=False):
+        '''
+        Create a batch sampler of indices. Return actions, returns, observation for training.
+        get_old_log_probs: This is required for PPO to recall the log_prob of the action w.r.t.
+                           the policy that generated this transition.
+        '''
+        sampler = BatchSampler(
+            SubsetRandomSampler(range(self.last_done)),
+            batch_size,
+            drop_last=True)
+        for indices in sampler:
+            if get_old_log_probs:
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.log_probs[indices]
+            else:
+                yield self.actions[indices], self.returns[indices], self.obs[indices]
 
 
 #params: rollout_size default this to 100 so we play an entire game?, num_updates
