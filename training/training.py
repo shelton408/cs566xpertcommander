@@ -2,39 +2,13 @@ import sys
 import torch
 import torch.nn as nn
 import logging
-from collections.abc import Iterable
 import time
+import numpy as np
+from training.utils import AverageMeter, flatten
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 
 sys.path.append('../')
-from cs556xpertcommander.the_game import Env
-
-#move to a utils class?
-def flatten(l):
-    for el in l:
-        if isinstance(el, Iterable) and not isinstance(el, (str, bytes)):
-            yield from flatten(el)
-        else:
-            yield el
-
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count         
+from cs566xpertcommander.the_game import Env      
 
 
 class RolloutStorage():
@@ -42,7 +16,6 @@ class RolloutStorage():
         self.rollout_size = rollout_size
         self.obs_size = obs_size
         self.reset()
-
 
     def insert(self, step, done, action, log_prob, reward, obs):
         '''
@@ -77,7 +50,7 @@ class RolloutStorage():
         for step in reversed(range(self.last_done+1)):
             self.returns[step] = self.rewards[step] + \
                                 self.returns[step + 1] * gamma * (1 - self.done[step])
-    
+
     def batch_sampler(self, batch_size, get_old_log_probs=False):
         '''
         Create a batch sampler of indices. Return actions, returns, observation for training.
@@ -97,23 +70,8 @@ class RolloutStorage():
 
 #params: rollout_size default this to 100 so we play an entire game?, num_updates
 class Trainer():
-    def __init__(self, num_players, agents, params, logfile='./training_log', obs_size=1):#replace obs_size with state size
-        self.config = {
-            'num_players': num_players,
-            'log_filename': logfile
-            #env_name for different envs later?
-        }
-        logging.basicConfig(filename=logfile,
-                            filemode='w', level=logging.INFO)
-        self.env = Env(self.config)
-        self.env.set_agents(agents)
-        self.params = params
-        self.agents = agents
-        self.obs_size = obs_size
-        self.rollouts = RolloutStorage(self.params['rollout_size'], obs_size)
-
-    def set_agents(self, agents):
-        self.agents = agents
+    def __init__(self):#replace obs_size with state size
+        self.obs_size = 4
 
     def parse_state(self, state):
         out = []
@@ -127,63 +85,64 @@ class Trainer():
         ret = ret[:self.obs_size]
         return ret
 
+    def reset_game(self, env):
+        env.init_game()
+        return env.game.state, self.parse_state(env.game.state) #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
-    def reset_game(self):
-        self.env = Env(self.config)
-        self.env.set_agents(self.agents)
-        self.env.init_game()
-        return self.env.game.state, self.parse_state(self.env.game.state) #return state of first player as obs, if we allow agents to pick order somehow, this has to change
-
-    def train(self):
+    def train(self, env, rollouts, policy, params):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
         rewards, success_rate = [], []
 
-        for j in range(self.params['num_updates']):
+        print("Training model with {} parameters...".format(policy.num_params))
+
+        '''
+        Training Loop
+        '''
+        for j in range(params.num_updates):
             ## Initialization
             avg_eps_reward, avg_success_rate = AverageMeter(), AverageMeter()
             #minigrid resets the game after each rollout, we should either make rollout size big enough to reach endgame, or not
             done = False
-            state, prev_obs = self.reset_game()
+            state, prev_obs = self.reset_game(env)
             prev_obs = torch.tensor(prev_obs, dtype=torch.float32)
-            prev_eval = self.env.game.num_playable() #used to calculate reward
+            prev_eval = env.game.num_playable() #used to calculate reward
             eps_reward = 0.
             start_time = time.time()
             deck_end_sizes = []
             ## Collect rollouts
-            for step in range(self.rollouts.rollout_size):
+            for step in range(rollouts.rollout_size):
                 if done:
                     # # Store episode statistics
                     avg_eps_reward.update(eps_reward)
-                    deck_end_sizes.append(len(self.env.game.state['drawpile']))
+                    deck_end_sizes.append(len(env.game.state['drawpile']))
                     # if 'success' in info: 
                     #     avg_success_rate.update(int(info['success']))
 
                     # Reset Environment
-                    state, obs = self.reset_game()
+                    state, obs = self.reset_game(env)
                     obs = torch.tensor(obs, dtype=torch.float32)
-                    prev_eval = self.env.game.num_playable() #used to calculate reward
+                    prev_eval = env.game.num_playable() #used to calculate reward
                     eps_reward = 0.
                 else:
                     obs = prev_obs
 
                 #agent action
                 #action, log_prob = agents[state['current_player']].act(state)
-                action = self.agents[state['current_player']].step(state)
-                log_prob = torch.tensor((.2),dtype=torch.float32)
+                action, log_prob = policy.act(obs)
                 #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
-                state, next_player = self.env.step(action)
-                action_tensor = torch.tensor((action),dtype=torch.float32)
+                if action <= len(env.game.state['legal_actions'][0]) - 1:
+                    state, next_player = env.step(action)
+                else:
+                    state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
+                # action_tensor = torch.tensor(action, dtype=torch.float32)
                 obs = self.parse_state(state)
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
-                eval = self.env.game.num_playable()
-                reward = (eval - prev_eval)/5 + 1
-                prev_eval = eval
-
-                done = self.env.game.is_over()
-
-
-                self.rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action_tensor, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs)
+                curr_eval = env.game.num_playable()
+                reward = (curr_eval - prev_eval)/5 + 1
+                prev_eval = curr_eval
+                done = env.game.is_over()
+                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs)
                 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
                 eps_reward += reward
@@ -193,14 +152,14 @@ class Trainer():
             ###    stored rollout steps. Discount factor is given in 'params'                ###
             ### HINT: This requires just 1 line of code.                                     ###
             ####################################################################################
-            self.rollouts.compute_returns(self.params['discount'])
+            rollouts.compute_returns(params.discount)
             ################################# END OF YOUR CODE #################################
             
             rollout_done_time = time.time()
 
             # policy.update(rollouts) update here
             update_done_time = time.time()
-            self.rollouts.reset()
+            rollouts.reset()
 
             ## log metrics
             rewards.append(avg_eps_reward.avg)

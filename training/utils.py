@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
@@ -32,3 +34,12 @@ class ParamDict(dict):
 
     def __getstate__(self): return self
     def __setstate__(self, d): self = d
+
+
+#move to a utils class?
+def flatten(l):
+    for el in l:
+        if isinstance(el, Iterable) and not isinstance(el, (str, bytes)):
+            yield from flatten(el)
+        else:
+            yield el 

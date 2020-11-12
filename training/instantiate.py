@@ -27,8 +27,8 @@ def instantiate(params_in, seed=123):
     '''
     2. Instantiate Rollout Buffer and Policy
     '''
-    rollouts = RolloutStorage(params.rollout_size, 4)  # obs_size = 8
+    rollouts = RolloutStorage(params.rollout_size, obs_size)  # obs_size = 8
     policy_class = params.policy_params.pop('policy_class')
 
-    policy = policy_class(4, num_actions, **params.policy_params)  # obs_size = 8
+    policy = policy_class(obs_size, num_actions, **params.policy_params)  # obs_size = 8
     return rollouts, policy
