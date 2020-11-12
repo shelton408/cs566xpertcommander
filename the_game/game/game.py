@@ -10,15 +10,19 @@ HANDSIZES = {
 
 
 class Game:
-    def __init__(self, num_players):
+    def __init__(self, num_players, num_cards=98):
         self.minMoveSize = 2
         self.num_players = num_players
+        handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         self.state = {
             'current_player': 0,
+            'handsize': handsize,
             'players': [],
             'num_moves_taken': 0,
+            'number_of_cards': num_cards,
             'drawpile': [],
-            'decks': [],
+            'played_cards': np.array([], dtype=int),
+            'decks': np.array([], dtype=int),
             'hands': [],
             'hints': [[], [], [], []],  # Not implemented yet
             'legal_actions': [[], [], [], []],
@@ -36,13 +40,13 @@ class Game:
 
             # when drawpile is empty, min moves lowered to 1
             self.minMoveSize = 1
-        return cards
+        return np.array(cards)
 
 
     def init_game(self):
         self.state['players'] = list(range(self.num_players))
 
-        self.state['decks'] = np.array([1, 1, 100, 100])
+        self.state['decks'] = np.array([1, 1, 100, 100])  # First two decks are ascending, other are descending
 
         drawpile = np.arange(2, 100)
         np.random.shuffle(drawpile)
@@ -50,7 +54,10 @@ class Game:
 
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         for idx in range(self.num_players):
-            hand = self.draw(handsize)
+            hand = np.sort(self.draw(handsize))
+            # self.state['hands'][idx] = np.array(hand)
+
+            # self.state['hands'] = np.insert(self.state['hands'], hand, axis=1)
             self.state['hands'].append(hand)
             self.state['legal_actions'][idx] = self.get_legal_actions(idx)
 
@@ -99,7 +106,7 @@ class Game:
 
         if action == (-1, -1):  # End of turn action
             new_cards = self.draw(self.state['num_moves_taken'])
-            self.state['hands'][self.state['current_player']] = np.append(self.state['hands'][self.state['current_player']], new_cards)
+            self.state['hands'][self.state['current_player']] = sorted(np.append(self.state['hands'][self.state['current_player']], new_cards))
             self.state['num_moves_taken'] = 0
 
             # Because players get removed from self.state['players'] in the endgame when they
@@ -112,7 +119,10 @@ class Game:
 
         else:
             card_id, deck_id = action
-            self.state['decks'][deck_id] = self.state['hands'][self.state['current_player']][card_id]
+            card = self.state['hands'][self.state['current_player']][card_id]
+            self.state['decks'][deck_id] = card
+            self.state['played_cards'] = np.sort(np.append(self.state['played_cards'], card))
+
             self.state['hands'][self.state['current_player']] = np.delete(self.state['hands'][self.state['current_player']], card_id)
             self.state['num_moves_taken'] += 1
             self.get_all_legal_actions()

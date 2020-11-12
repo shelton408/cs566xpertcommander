@@ -1,4 +1,5 @@
 from the_game import Game
+import numpy as np
 import logging
 
 
@@ -38,6 +39,7 @@ class Env:
 
     def run(self):
         state, agent_id = self.init_game()
+        self.get_state()
         logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
 
         while not self._is_over():
@@ -58,5 +60,31 @@ class Env:
     def get_player_id(self):
         return self.game.get_player_id()
 
-    def get_state(self, agent_id):
-        return self.game.get_state(agent_id)
+    def get_state(self):
+        '''
+        Returns an encoded version of the state for the current player
+        This is a N_Cards * 4 flat np.array
+        (One hot encoded vector for what numbers are on hand) (N_Cards,)
+        (One hot encoded vector for what numbers are on the Asc.DiscardDecks) (N_Cards + 1,) because starts at 1
+        (One hot encoded vector for what numbers are on the Desc.DiscardDecks) (N_Cards + 1,) because starts at 100
+        (One hot encoded vector for what numbers have been played already) (N_Cards)
+        '''
+        num_cards = self.game.state['number_of_cards']
+
+        current_player_hand = self.game.state['hands'][self.game.state['current_player']] - 2  # because lowest card is 2
+        hand = np.zeros(num_cards, dtype=int)
+        hand[current_player_hand] = 1
+
+        discard_decks = self.game.state['decks'] - 1
+
+        asc_disc = np.zeros(num_cards + 2, dtype=int)
+        asc_disc[discard_decks[:2]] = 1
+
+        desc_disc = np.zeros(num_cards + 2, dtype=int)
+        desc_disc[discard_decks[2:]] = 1
+
+        played_cards = np.zeros(num_cards)
+        played_cards[self.game.state['played_cards'] - 2] = 1
+        encoded_state = np.concatenate((hand, asc_disc, desc_disc, played_cards), axis=None)
+
+        return encoded_state
