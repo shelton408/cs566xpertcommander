@@ -163,7 +163,7 @@ class Trainer():
             
             rollout_done_time = time.time()
 
-            # policy.update(rollouts) update here
+            policy.update(rollouts)
             update_done_time = time.time()
             rollouts.reset()
 
