@@ -6,7 +6,8 @@ NUM_OF_RANDOM_PLAYERS = 2
 # Create Environment
 config = {
     'num_players': NUM_OF_RANDOM_PLAYERS,
-    'log_filename': './logs/random_agent.log'
+    'log_filename': './logs/random_agent.log',
+    'total_num_cards': 50
 }
 env = Env(config)
 
