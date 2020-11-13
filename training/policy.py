@@ -27,6 +27,7 @@ class ActorNetwork(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, num_actions)
+            
         )
         ################################# END OF YOUR CODE #################################
 

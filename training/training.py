@@ -139,7 +139,7 @@ class Trainer():
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
                 curr_eval = env.game.num_playable()
-                reward = (curr_eval - prev_eval)/5 + 1
+                reward = (curr_eval - prev_eval)/4 + 1
                 prev_eval = curr_eval
                 done = env.game.is_over()
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs)
@@ -157,7 +157,7 @@ class Trainer():
             
             rollout_done_time = time.time()
 
-            # policy.update(rollouts) update here
+            policy.update(rollouts) #update here
             update_done_time = time.time()
             rollouts.reset()
 
