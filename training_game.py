@@ -1,3 +1,4 @@
+#currently depreciated dont use
 from training.training import Trainer
 from the_game import RandomAgent
 from the_game import Env

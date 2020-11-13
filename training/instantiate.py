@@ -20,8 +20,8 @@ def instantiate(params_in, seed=123):
     # if nonwrapped_env is None:
     #     nonwrapped_env = gym.make(params.env_name)
     # env = FlatObsWrapper(nonwrapped_env)
-    obs_size = 4
-    num_actions = 8
+    obs_size = 110
+    num_actions = 33
     # env.seed(seed)   # Required for reproducibility in stochastic environments.
 
     '''

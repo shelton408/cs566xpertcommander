@@ -2,6 +2,7 @@ from the_game import Game
 import numpy as np
 import logging
 
+MAX_HAND_SIZE = 8 #maximum hand size of any player count
 
 class Env:
     '''
@@ -48,11 +49,13 @@ class Env:
             state = next_state
             agent_id = next_agent_id
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
+            self.get_state()
 
 
 
     def _get_legal_actions(self):
-        return self.game.get_legal_actions()
+        self.game.get_legal_actions()
+        return self.game.get_legal_actions()[0]
 
     def is_over(self):
         return self.game.is_over()
@@ -60,9 +63,18 @@ class Env:
     def get_player_id(self):
         return self.game.get_player_id()
 
-    def get_state(self):
+    def get_encoded_state(self):
         '''
         Returns an encoded version of the state for the current player
+        CHANGED
+        note: max hand size is the max of any ruleset, not the max of the env, this way we can train a general network
+        return len: max_hand_size + num_piles + num_playable_cards
+        = 8 + 4 + 98 = 110
+        (Value of cards in hand divided by 100 to normalize, appebded with 0s to fill) (MAX_HAND_SIZE, )
+        (Value of cards in deck piles by 100 to normalize) (N_Piles,)
+        (One hot encoded vector of what is not yet played) (N_Cards)
+
+        OLD
         This is a N_Cards * 4 flat np.array
         (One hot encoded vector for what numbers are on hand) (N_Cards,)
         (One hot encoded vector for what numbers are on the Asc.DiscardDecks) (N_Cards + 1,) because starts at 1
@@ -71,20 +83,23 @@ class Env:
         '''
         num_cards = self.game.state['number_of_cards']
 
-        current_player_hand = self.game.state['hands'][self.game.state['current_player']] - 2  # because lowest card is 2
-        hand = np.zeros(num_cards, dtype=int)
-        hand[current_player_hand] = 1
+        # current_player_hand = self.game.state['hands'][self.game.state['current_player']] - 2  # because lowest card is 2
+        # hand = np.zeros(num_cards, dtype=int)
+        # hand[current_player_hand] = 1
+        hand = self.game.state['hands'][self.game.state['current_player']]/100
+        while len(hand) < MAX_HAND_SIZE:
+            hand = np.append(hand, [0])
 
-        discard_decks = self.game.state['decks'] - 1
+        discard_decks = (self.game.state['decks'] - 1)/100
 
-        asc_disc = np.zeros(num_cards + 2, dtype=int)
-        asc_disc[discard_decks[:2]] = 1
+        # asc_disc = np.zeros(num_cards + 2, dtype=int)
+        # asc_disc[discard_decks[:2]] = 1
 
-        desc_disc = np.zeros(num_cards + 2, dtype=int)
-        desc_disc[discard_decks[2:]] = 1
+        # desc_disc = np.zeros(num_cards + 2, dtype=int)
+        # desc_disc[discard_decks[2:]] = 1
 
-        played_cards = np.zeros(num_cards)
-        played_cards[self.game.state['played_cards'] - 2] = 1
-        encoded_state = np.concatenate((hand, asc_disc, desc_disc, played_cards), axis=None)
 
+        unplayed_cards = np.ones(num_cards)
+        unplayed_cards[self.game.state['played_cards'] - 2] = 0
+        encoded_state = np.concatenate((hand, discard_decks, unplayed_cards), axis=None)
         return encoded_state

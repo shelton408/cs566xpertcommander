@@ -91,44 +91,62 @@ class Game:
 
     def get_legal_actions(self, agent_id):
         legal_actions = []
+        one_hot = []
         for c_id, c_value in enumerate(self.state['hands'][agent_id]):
             for d_id, d_value in enumerate(self.state['decks']):
                 isAscending = True if d_id in [0, 1] else False
                 if self._is_legal_move(d_value, c_value, isAscending):
+                    one_hot.append(1)
                     legal_actions.append((c_id, d_id))
+                else:
+                    one_hot.append(0)
+        while len(one_hot) < self.state['handsize']*4:
+            one_hot.append(0)
         if self.state['num_moves_taken'] >= self.minMoveSize:
             legal_actions.append((-1, -1))  # Encode the end-turn action as negative value
-        return legal_actions
-
+            one_hot.append(1)
+        else:
+            one_hot.append(0)
+        return one_hot
 
     def step(self, action_id):
-        action = self.state['legal_actions'][self.state['current_player']][action_id]
-
-        if action == (-1, -1):  # End of turn action
-            new_cards = self.draw(self.state['num_moves_taken'])
-            self.state['hands'][self.state['current_player']] = sorted(np.append(self.state['hands'][self.state['current_player']], new_cards))
-            self.state['num_moves_taken'] = 0
-
-            # Because players get removed from self.state['players'] in the endgame when they
-            # have played all their cards.
-            next_id = self.state['players'].index(self.state['current_player']) + 1
-            self.state['current_player'] = self.state['players'][next_id] if next_id < self.num_players else 0
-            self.get_all_legal_actions()
-            self.state['last_action'] = action
+        #action = self.state['legal_actions'][self.state['current_player']][action_id]
+        if not self.state['legal_actions'][self.state['current_player']][action_id]:
+            print('ILLEGAL MOVE CHOSEN')
             return (self.state, self.state['current_player'])
-
         else:
-            card_id, deck_id = action
-            card = self.state['hands'][self.state['current_player']][card_id]
-            self.state['decks'][deck_id] = card
-            self.state['played_cards'] = np.sort(np.append(self.state['played_cards'], card))
+            action = (action_id//4, action_id % 4)
+            if action_id == self.state['handsize']*4:
+                action = (-1,-1)
 
-            self.state['hands'][self.state['current_player']] = np.delete(self.state['hands'][self.state['current_player']], card_id)
-            self.state['num_moves_taken'] += 1
-            self.get_all_legal_actions()
-            self.state['last_action'] = action
-            logging.info(' State for player {}: {}\nEvaluation: {}\nLast Card(s) played{}\n'.format(self.state['current_player'], str(self.state), str(self.drawpile_eval()), action))
-            return (self.state, self.state['current_player'])
+            if action == (-1, -1):  # End of turn action
+                new_cards = self.draw(self.state['num_moves_taken'])
+
+                #not sure we should sort this
+                #self.state['hands'][self.state['current_player']] = sorted(np.append(self.state['hands'][self.state['current_player']], new_cards))
+                self.state['hands'][self.state['current_player']] = np.append(self.state['hands'][self.state['current_player']], new_cards)
+                self.state['num_moves_taken'] = 0
+
+                # Because players get removed from self.state['players'] in the endgame when they
+                # have played all their cards.
+                next_id = self.state['players'].index(self.state['current_player']) + 1
+                self.state['current_player'] = self.state['players'][next_id] if next_id < self.num_players else 0
+                self.get_all_legal_actions()
+                self.state['last_action'] = action
+                return (self.state, self.state['current_player'])
+
+            else:
+                card_id, deck_id = action
+                card = self.state['hands'][self.state['current_player']][card_id]
+                self.state['decks'][deck_id] = card
+                self.state['played_cards'] = np.sort(np.append(self.state['played_cards'], card))
+
+                self.state['hands'][self.state['current_player']] = np.delete(self.state['hands'][self.state['current_player']], card_id)
+                self.state['num_moves_taken'] += 1
+                self.get_all_legal_actions()
+                self.state['last_action'] = action
+                logging.info(' State for player {}: {}\nEvaluation: {}\nLast Card(s) played{}\n'.format(self.state['current_player'], str(self.state), str(self.drawpile_eval()), action))
+                return (self.state, self.state['current_player'])
 
 
     def is_over(self):
@@ -139,7 +157,7 @@ class Game:
         '''
 
         return (len(self.state['drawpile']) == 0 and all([len(hand) == 0 for hand in self.state['hands']]))\
-            or len(self.state['legal_actions'][self.state['current_player']]) == 0
+            or sum(self.state['legal_actions'][self.state['current_player']]) == 0
 
 
     def hand_eval(self):

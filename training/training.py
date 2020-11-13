@@ -87,7 +87,7 @@ class Trainer():
 
     def reset_game(self, env):
         env.init_game()
-        return env.game.state, self.parse_state(env.game.state) #return state of first player as obs, if we allow agents to pick order somehow, this has to change
+        return env.game.state, env.get_encoded_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
     def train(self, env, rollouts, policy, params):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
@@ -128,14 +128,14 @@ class Trainer():
 
                 #agent action
                 #action, log_prob = agents[state['current_player']].act(state)
-                action, log_prob = policy.act(obs)
+                action, log_prob = policy.act(obs, env.game.state['legal_actions'][0])
                 #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
                 if action <= len(env.game.state['legal_actions'][0]) - 1:
                     state, next_player = env.step(action)
                 else:
-                    state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
+                    raise ValueError('Action > length of legal actions')
                 # action_tensor = torch.tensor(action, dtype=torch.float32)
-                obs = self.parse_state(state)
+                obs = env.get_encoded_state()
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
                 curr_eval = env.game.num_playable()

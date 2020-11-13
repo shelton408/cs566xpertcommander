@@ -47,7 +47,7 @@ class Policy():
         self.policy_epochs = policy_epochs
         self.entropy_coef = entropy_coef
 
-    def act(self, state):
+    def act(self, state, legal_actions):
         ############################## TODO: YOUR CODE BELOW ###############################
         ### 1. Run the actor network on the current state to get the action logits       ###
         ### 2. Build a Categorical(...) instance from the logits                         ###
@@ -56,7 +56,9 @@ class Policy():
         ### https://pytorch.org/docs/stable/distributions.html#torch.distributions.categorical.Categorical
         ####################################################################################
         logits = self.actor(state)
-        dist = Categorical(logits=logits)
+        softmax = nn.Softmax()
+        probability = softmax(logits) * torch.tensor(legal_actions, dtype=torch.float32)
+        dist = Categorical(probability)
         action = dist.sample()
         ################################# END OF YOUR CODE #################################
         log_prob = dist.log_prob(action)

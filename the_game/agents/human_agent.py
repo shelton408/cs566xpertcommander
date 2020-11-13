@@ -28,4 +28,7 @@ def _print_state(state, player_id):
     print(state['hands'][state['current_player']])
 
     print('\n======= Actions available (card_id, deck_id) ======')
-    print(','.join([str(idx) + ': ' + str(action) for idx, action in enumerate(state['legal_actions'][state['current_player']])]))
+    for idx in range(len(state['legal_actions'][state['current_player']])):
+        if(state['legal_actions'][state['current_player']][idx]):
+            print('{}: ({},{})'.format(idx, idx//4, idx%4))
+    #print(','.join([str(idx) + ': ' + str(action) for idx, action in enumerate(state['legal_actions'][state['current_player']])]))
