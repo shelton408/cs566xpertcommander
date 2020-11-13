@@ -73,21 +73,21 @@ class Trainer():
     def __init__(self):#replace obs_size with state size
         self.obs_size = 4
 
-    def parse_state(self, state):
-        out = []
-        for k in state:
-            if not k == 'legal_actions':
-                out.append(state[k])
-        ret = list(flatten(out))
-        #this last part is not needed once we have a static state size
-        while(len(ret) < self.obs_size):
-            ret.append(0)
-        ret = ret[:self.obs_size]
-        return ret
+    # def parse_state(self, state):
+    #     out = []
+    #     for k in state:
+    #         if not k == 'legal_actions':
+    #             out.append(state[k])
+    #     ret = list(flatten(out))
+    #     #this last part is not needed once we have a static state size
+    #     while(len(ret) < self.obs_size):
+    #         ret.append(0)
+    #     ret = ret[:self.obs_size]
+    #     return ret
 
     def reset_game(self, env):
         env.init_game()
-        return env.game.state, self.parse_state(env.game.state) #return state of first player as obs, if we allow agents to pick order somehow, this has to change
+        return env.game.state, env.get_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
     def train(self, env, rollouts, policy, params):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
@@ -103,7 +103,7 @@ class Trainer():
             avg_eps_reward, avg_success_rate = AverageMeter(), AverageMeter()
             #minigrid resets the game after each rollout, we should either make rollout size big enough to reach endgame, or not
             done = False
-            state, prev_obs = self.reset_game(env)
+            game_state, prev_obs = self.reset_game(env)
             prev_obs = torch.tensor(prev_obs, dtype=torch.float32)
             prev_eval = env.game.num_playable() #used to calculate reward
             eps_reward = 0.
@@ -119,7 +119,7 @@ class Trainer():
                     #     avg_success_rate.update(int(info['success']))
 
                     # Reset Environment
-                    state, obs = self.reset_game(env)
+                    game_state, obs = self.reset_game(env)
                     obs = torch.tensor(obs, dtype=torch.float32)
                     prev_eval = env.game.num_playable() #used to calculate reward
                     eps_reward = 0.
@@ -128,14 +128,20 @@ class Trainer():
 
                 #agent action
                 #action, log_prob = agents[state['current_player']].act(state)
-                action, log_prob = policy.act(obs)
+
+                all_prob = policy.act(obs)
+                mask = torch.tensor(env.encode_legal_actions(), dtype=torch.float32)
+                valid_prob = mask * all_prob
+                action = torch.argmax(valid_prob, axis=-1)
+                log_prob = torch.log(valid_prob[action])
+                env.step(action)
                 #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
-                if action <= len(env.game.state['legal_actions'][0]) - 1:
-                    state, next_player = env.step(action)
-                else:
-                    state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
+                # if action <= len(env.game.state['legal_actions'][0]) - 1:
+                #     game_state, next_player = env.step(action)
+                # else:
+                #     game_state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
                 # action_tensor = torch.tensor(action, dtype=torch.float32)
-                obs = self.parse_state(state)
+                obs = env.get_state()
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
                 curr_eval = env.game.num_playable()

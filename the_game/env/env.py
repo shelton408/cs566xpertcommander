@@ -71,7 +71,7 @@ class Env:
         '''
         num_cards = self.game.state['number_of_cards']
 
-        current_player_hand = self.game.state['hands'][self.game.state['current_player']] - 2  # because lowest card is 2
+        current_player_hand = [n - 2 for n in self.game.state['hands'][self.game.state['current_player']]]  # because lowest card is 2
         hand = np.zeros(num_cards, dtype=int)
         hand[current_player_hand] = 1
 
@@ -88,3 +88,18 @@ class Env:
         encoded_state = np.concatenate((hand, asc_disc, desc_disc, played_cards), axis=None)
 
         return encoded_state
+
+    def encode_legal_actions(self):
+        '''
+        a one-dimensional numpy array with a length of 33, works as a mask for NN outputs, filtering all invalid actions
+        i.e. 
+            legal_actions for a current_player is [(1,1), (1,2), (1, 3), (1,4)]
+            return would be [1, 1, 1, 1, 0, 0, 0, 0, ...25 more 0...]
+        '''
+        encode_actions = np.zeros(33, dtype=int)
+        legal_actions = self.game.state['legal_actions'][self.game.state['current_player']]
+        for index, value_tuple in enumerate(legal_actions):
+            if value_tuple != (-1,-1): # end state
+                encode_actions[index] = 1
+        return encode_actions
+        
