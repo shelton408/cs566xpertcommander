@@ -10,7 +10,7 @@ HANDSIZES = {
 
 
 class Game:
-    def __init__(self, num_players, num_cards=98, all_actions=33):
+    def __init__(self, num_players, num_cards=98):
         self.minMoveSize = 2
         self.num_players = num_players
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
@@ -44,6 +44,20 @@ class Game:
 
 
     def init_game(self):
+        self.state = {
+            'current_player': 0,
+            'handsize': handsize,
+            'players': [],
+            'num_moves_taken': 0,
+            'number_of_cards': num_cards,
+            'drawpile': [],
+            'played_cards': np.array([], dtype=int),
+            'decks': np.array([], dtype=int),
+            'hands': [],
+            'hints': [[], [], [], []],  # Not implemented yet
+            'legal_actions': [[], [], [], []], 
+            'last_action': ()
+        }
         self.state['players'] = list(range(self.num_players))
 
         self.state['decks'] = np.array([1, 1, 100, 100])  # First two decks are ascending, other are descending
