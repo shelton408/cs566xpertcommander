@@ -10,7 +10,7 @@ HANDSIZES = {
 
 
 class Game:
-    def __init__(self, num_players, num_cards=98):
+    def __init__(self, num_players, num_cards=98, all_actions=33):
         self.minMoveSize = 2
         self.num_players = num_players
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
@@ -25,7 +25,7 @@ class Game:
             'decks': np.array([], dtype=int),
             'hands': [],
             'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []],
+            'legal_actions': [[], [], [], []], 
             'last_action': ()
         }
 
@@ -87,6 +87,7 @@ class Game:
     def get_all_legal_actions(self):
         for idx in range(self.num_players):
             self.state['legal_actions'][idx] = self.get_legal_actions(idx)
+
 
 
     def get_legal_actions(self, agent_id):

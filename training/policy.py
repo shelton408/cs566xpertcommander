@@ -26,7 +26,8 @@ class ActorNetwork(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, num_actions)
+            nn.Linear(hidden_dim, num_actions),
+            nn.Softmax(dim = -1)
         )
         ################################# END OF YOUR CODE #################################
 
@@ -55,12 +56,12 @@ class Policy():
         ### Documentation of Categorical:                                                ###
         ### https://pytorch.org/docs/stable/distributions.html#torch.distributions.categorical.Categorical
         ####################################################################################
-        logits = self.actor(state)
-        dist = Categorical(logits=logits)
-        action = dist.sample()
+        all_prob = self.actor(state)
+        # dist = Categorical(logits)
+        # action = dist.sample()
         ################################# END OF YOUR CODE #################################
-        log_prob = dist.log_prob(action)
-        return action, log_prob
+        # log_prob = dist.log_prob(action)
+        return all_prob
 
     def evaluate_actions(self, state, action):
         '''
