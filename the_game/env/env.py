@@ -9,7 +9,10 @@ class Env:
     '''
 
     def __init__(self, config):
-        self.game = Game(config['num_players'])
+        if 'total_num_cards' in config:
+            self.game = Game(config['num_players'], num_cards=config['total_num_cards'])
+        else:
+            self.game = Game(config['num_players'])
         self.agents = None
         logfile = './logs/run.log' if 'log_filename' not in config else config['log_filename']
         logging.basicConfig(filename=logfile,
@@ -92,7 +95,7 @@ class Env:
     def encode_legal_actions(self):
         '''
         a one-dimensional numpy array with a length of 33, works as a mask for NN outputs, filtering all invalid actions
-        i.e. 
+        i.e.
             legal_actions for a current_player is [(1,1), (1,2), (1, 3), (1,4)]
             return would be [1, 1, 1, 1, 0, 0, 0, 0, ...25 more 0...]
         '''
@@ -102,4 +105,3 @@ class Env:
             if value_tuple != (-1,-1): # end state
                 encode_actions[index] = 1
         return encode_actions
-        

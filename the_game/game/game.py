@@ -13,10 +13,11 @@ class Game:
     def __init__(self, num_players, num_cards=98):
         self.minMoveSize = 2
         self.num_players = num_players
-        handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
+        self.num_cards = num_cards
+        self.handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         self.state = {
             'current_player': 0,
-            'handsize': handsize,
+            'handsize': self.handsize,
             'players': [],
             'num_moves_taken': 0,
             'number_of_cards': num_cards,
@@ -25,7 +26,7 @@ class Game:
             'decks': np.array([], dtype=int),
             'hands': [],
             'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []], 
+            'legal_actions': [[], [], [], []],
             'last_action': ()
         }
 
@@ -46,23 +47,23 @@ class Game:
     def init_game(self):
         self.state = {
             'current_player': 0,
-            'handsize': handsize,
+            'handsize': self.handsize,
             'players': [],
             'num_moves_taken': 0,
-            'number_of_cards': num_cards,
+            'number_of_cards': self.num_cards,
             'drawpile': [],
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
             'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []], 
+            'legal_actions': [[], [], [], []],
             'last_action': ()
         }
         self.state['players'] = list(range(self.num_players))
 
-        self.state['decks'] = np.array([1, 1, 100, 100])  # First two decks are ascending, other are descending
+        self.state['decks'] = np.array([1, 1, self.num_cards + 2, self.num_cards + 2])  # First two decks are ascending, other are descending
 
-        drawpile = np.arange(2, 100)
+        drawpile = np.arange(2, self.num_cards + 2)
         np.random.shuffle(drawpile)
         self.state['drawpile'] = drawpile
 
@@ -178,7 +179,10 @@ class Game:
         Evaluation function that returns the ratio on how many cards in the drawpile can be played.
         Returns: (number of cards in drawpile that can be played) / (number of cards in drawpile)
         '''
-        return len([c for c in self.state['drawpile'] if self._can_be_played(c)]) / len(self.state['drawpile'])
+        if len(self.state['drawpile']) > 0:
+            return len([c for c in self.state['drawpile'] if self._can_be_played(c)]) / len(self.state['drawpile'])
+        else:
+            return 0  # drawpile is empty
 
     def num_playable(self):
         '''
