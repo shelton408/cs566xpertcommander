@@ -105,3 +105,7 @@ class Env:
             if value_tuple != (-1,-1): # end state
                 encode_actions[index] = 1
         return encode_actions
+
+
+    def get_num_cards_in_drawpile(self):
+        return len(self.game.state['drawpile'])
