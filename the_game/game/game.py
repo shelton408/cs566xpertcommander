@@ -10,10 +10,18 @@ HANDSIZES = {
 
 
 class Game:
-    def __init__(self, num_players, num_cards=98):
+    def __init__(self, num_players, num_cards=98, is_static_drawpile=False):
         self.minMoveSize = 2
         self.num_players = num_players
         self.num_cards = num_cards
+        self.is_static_drawpile = is_static_drawpile
+
+        if self.is_static_drawpile:
+            self.static_drawpile = np.arange(2, self.num_cards + 2)
+            np.random.shuffle(self.static_drawpile)
+        else:
+            self.static_drawpile = np.array([])
+
         self.handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         self.state = {
             'current_player': 0,
@@ -62,10 +70,13 @@ class Game:
         }
         self.state['players'] = list(range(self.num_players))
 
-        self.state['decks'] = np.array([1, 1, 100, 100])  # First two decks are ascending, other are descending
+        self.state['decks'] = np.array([1, 1, self.num_cards + 2, self.num_cards + 2])  # First two decks are ascending, other are descending
 
-        drawpile = np.arange(2, 100)
-        np.random.shuffle(drawpile)
+        if not self.is_static_drawpile:
+            drawpile = np.arange(2, self.num_cards + 2)
+            np.random.shuffle(drawpile)
+        else:
+            drawpile = self.static_drawpile.copy()
         self.state['drawpile'] = drawpile
 
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
@@ -197,7 +208,10 @@ class Game:
         Evaluation function that returns the ratio on how many cards in the drawpile can be played.
         Returns: (number of cards in drawpile that can be played) / (number of cards in drawpile)
         '''
-        return len([c for c in self.state['drawpile'] if self._can_be_played(c)]) / len(self.state['drawpile'])
+        if len(self.state['drawpile']) > 0:
+            return len([c for c in self.state['drawpile'] if self._can_be_played(c)]) / len(self.state['drawpile'])
+        else:
+            return 0  # drawpile is empty
 
     def num_playable(self):
         '''

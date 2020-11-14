@@ -10,7 +10,12 @@ class Env:
     '''
 
     def __init__(self, config):
-        self.game = Game(config['num_players'])
+        is_static_drawpile = 'static_drawpile' in config
+
+        if 'total_num_cards' in config:
+            self.game = Game(config['num_players'], num_cards=config['total_num_cards'], is_static_drawpile=is_static_drawpile)
+        else:
+            self.game = Game(config['num_players'], is_static_drawpile=is_static_drawpile)
         self.agents = None
         logfile = './logs/run.log' if 'log_filename' not in config else config['log_filename']
         logging.basicConfig(filename=logfile,

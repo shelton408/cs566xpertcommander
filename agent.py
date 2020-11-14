@@ -12,7 +12,7 @@ from cs566xpertcommander.the_game import Env
 # hyperparameters
 policy_params = ParamDict(
     policy_class=Policy,   # Policy class to use (replaced later)
-    hidden_dim=32,         # dimension of the hidden state in actor network
+    hidden_dim=128,         # dimension of the hidden state in actor network
     learning_rate=1e-3,    # learning rate of policy update
     batch_size=1024,       # batch size for policy update
     policy_epochs=4,       # number of epochs per policy update

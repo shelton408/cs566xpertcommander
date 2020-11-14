@@ -1,5 +1,4 @@
 *.xml
 .idea/
 **/__pycache__/
-logs
-*.log
+logs/
