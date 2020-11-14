@@ -6,6 +6,7 @@ import time
 import numpy as np
 from training.utils import AverageMeter, flatten
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
+from torch.distributions.categorical import Categorical
 
 sys.path.append('../')
 from cs566xpertcommander.the_game import Env      
@@ -130,11 +131,21 @@ class Trainer():
                 #action, log_prob = agents[state['current_player']].act(state)
 
                 all_prob = policy.act(obs)
-                mask = torch.tensor(env.encode_legal_actions(), dtype=torch.float32)
+                mask = torch.tensor(env.game.state['legal_actions'][0], dtype=torch.float32)
                 valid_prob = mask * all_prob
-                action = torch.argmax(valid_prob, axis=-1)
-                log_prob = torch.log(valid_prob[action])
-                env.step(action)
+                rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
+                
+                dist = Categorical(probs = rescaled_valid_prob)
+                action = dist.sample() #sampling
+                log_prob = dist.log_prob(action)
+                if int(action) <= len(env.game.state['legal_actions'][0]) - 1:
+                    state, next_player = env.step(action)
+                else:
+                    raise ValueError('Action > length of legal actions')
+
+
+                # action = torch.argmax(rescaled_valid_prob)
+                # log_prob = torch.log(rescaled_valid_prob[action])
                 #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
                 # if action <= len(env.game.state['legal_actions'][0]) - 1:
                 #     game_state, next_player = env.step(action)

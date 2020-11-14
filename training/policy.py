@@ -81,8 +81,10 @@ class Policy():
         ###          You may find `action.squeeze(...)` helpful.
         ### 3. Compute the entropy of the distribution.
         ####################################################################################
-        logits = self.actor(state)
-        dist = Categorical(logits=logits)
+        all_prob = self.actor(state)
+        valid_prob = mask * all_prob
+        rescaled_valid_prob = valid_prob / torch.sum(valid_prob)
+        dist = Categorical(probs = rescaled_valid_prob)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
@@ -97,7 +99,6 @@ class Policy():
         '''
         for epoch in range(self.policy_epochs):
             data = rollouts.batch_sampler(self.batch_size)
-
             for sample in data:
                 actions_batch, returns_batch, obs_batch = sample
 

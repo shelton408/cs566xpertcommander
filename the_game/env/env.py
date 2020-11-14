@@ -94,19 +94,18 @@ class Env:
 
         return encoded_state
 
-    def encode_legal_actions(self):
-        '''
-        a one-dimensional numpy array with a length of 33, works as a mask for NN outputs, filtering all invalid actions
-        i.e.
-            legal_actions for a current_player is [(1,1), (1,2), (1, 3), (1,4)]
-            return would be [1, 1, 1, 1, 0, 0, 0, 0, ...25 more 0...]
-        '''
-        encode_actions = np.zeros(33, dtype=int)
-        legal_actions = self.game.state['legal_actions'][self.game.state['current_player']]
-        for index, value_tuple in enumerate(legal_actions):
-            if value_tuple != (-1,-1): # end state
-                encode_actions[index] = 1
-        return encode_actions
+    # def encode_legal_actions(self):
+    #     '''
+    #     a one-dimensional numpy array with a length of 33, works as a mask for NN outputs, filtering all invalid actions
+    #     i.e.
+    #         legal_actions for a current_player is [(1,1), (1,2), (1, 3), (1,4)]
+    #         return would be [1, 1, 1, 1, 0, 0, 0, 0, ...25 more 0...]
+    #     '''
+    #     encode_actions = np.zeros(33, dtype=int)
+    #     legal_actions = self.game.state['legal_actions'][self.game.state['current_player']]
+    #     for index, value_tuple in enumerate(legal_actions):
+    #             encode_actions[index] = 1
+    #     return encode_actions
 
     def get_num_cards_in_drawpile(self):
         return len(self.game.state['drawpile'])
