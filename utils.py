@@ -11,4 +11,5 @@ def plot_learning_curve(evals, num_it, num_cards=98):
     plt.xlim([0, num_it - 1])
     plt.xlabel('train iter')
     plt.grid('on')
-    plt.show()
+    # plt.show()
+    plt.savefig('plot.png')

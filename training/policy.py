@@ -88,7 +88,7 @@ class Policy():
         # entropy = dist.entropy()
         logits = self.actor(state)
         probability = F.softmax(logits, dim=1) * legal_actions
-        dist = Categorical(probability / (probability.sum(dim=1)))
+        dist = Categorical(probability / (probability.sum(dim=1)).view(-1, 1))
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################

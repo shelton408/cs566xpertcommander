@@ -11,6 +11,12 @@ sys.path.append('../')
 from cs566xpertcommander.the_game import Env      
 
 
+# import torch
+# from torch.utils.tensorboard import SummaryWriter
+# writer = SummaryWriter()
+
+from utils import plot_learning_curve
+
 class RolloutStorage():
     def __init__(self, rollout_size, obs_size, legal_actions_size): #rollout size determines the number of turns taken per rollout
         self.rollout_size = rollout_size
@@ -101,6 +107,7 @@ class Trainer():
         '''
         Training Loop
         '''
+        evaluations = []
         for j in range(params.num_updates):
             ## Initialization
             avg_eps_reward, avg_success_rate = AverageMeter(), AverageMeter()
@@ -143,7 +150,8 @@ class Trainer():
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
                 curr_eval = env.game.num_playable()
-                reward = (curr_eval - prev_eval)/4 + 1
+                # reward = (curr_eval - prev_eval)/4 + 1
+                reward = env.game.num_cards - len(env.game.state['drawpile'])
                 prev_eval = curr_eval
                 done = env.game.is_over()
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs, legal_actions)
@@ -178,5 +186,16 @@ class Trainer():
             #     plot_learning_curve(rewards, success_rate, params.num_updates)
             #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
             print('Deck end sizes:{}'.format(deck_end_sizes))
+
+            # writer.add_scalar("rewards / iter", avg_eps_reward.avg, j)
+            # writer.add_scalar("mean num cards left / iter", torch.Tensor(deck_end_sizes).mean(), j)
+
+            evaluations.append(np.mean(np.asarray(deck_end_sizes)))
+
+        # writer.flush()
+        # writer.close()
+
+        plot_learning_curve(evaluations, params.num_updates)
+
         return rewards, success_rate
 
