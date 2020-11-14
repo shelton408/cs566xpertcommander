@@ -12,12 +12,13 @@ from cs566xpertcommander.the_game import Env
 
 
 class RolloutStorage():
-    def __init__(self, rollout_size, obs_size): #rollout size determines the number of turns taken per rollout
+    def __init__(self, rollout_size, obs_size, legal_actions_size): #rollout size determines the number of turns taken per rollout
         self.rollout_size = rollout_size
         self.obs_size = obs_size
+        self.legal_actions_size = legal_actions_size
         self.reset()
 
-    def insert(self, step, done, action, log_prob, reward, obs):
+    def insert(self, step, done, action, log_prob, reward, obs, legal_actions):
         '''
         Inserting the transition at the current step number in the environment.
         '''
@@ -26,6 +27,7 @@ class RolloutStorage():
         self.log_probs[step].copy_(log_prob)
         self.rewards[step].copy_(reward)
         self.obs[step].copy_(obs)
+        self.legal_actions[step].copy_(legal_actions)
 
     def reset(self):
         '''
@@ -37,6 +39,7 @@ class RolloutStorage():
         self.log_probs = torch.zeros(self.rollout_size, 1)
         self.rewards = torch.zeros(self.rollout_size, 1)
         self.obs = torch.zeros(self.rollout_size, self.obs_size)
+        self.legal_actions = torch.zeros(self.rollout_size, self.legal_actions_size)
 
     def compute_returns(self, gamma):
         '''
@@ -63,9 +66,9 @@ class RolloutStorage():
             drop_last=True)
         for indices in sampler:
             if get_old_log_probs:
-                yield self.actions[indices], self.returns[indices], self.obs[indices], self.log_probs[indices]
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.log_probs[indices], self.legal_actions[indices]
             else:
-                yield self.actions[indices], self.returns[indices], self.obs[indices]
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices]
 
 
 #params: rollout_size default this to 100 so we play an entire game?, num_updates
@@ -128,7 +131,8 @@ class Trainer():
 
                 #agent action
                 #action, log_prob = agents[state['current_player']].act(state)
-                action, log_prob = policy.act(obs, env.game.state['legal_actions'][0])
+                legal_actions = torch.tensor(env.game.state['legal_actions'][0], dtype=torch.float32)
+                action, log_prob = policy.act(obs, legal_actions)
                 #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
                 if action <= len(env.game.state['legal_actions'][0]) - 1:
                     state, next_player = env.step(action)
@@ -142,7 +146,7 @@ class Trainer():
                 reward = (curr_eval - prev_eval)/4 + 1
                 prev_eval = curr_eval
                 done = env.game.is_over()
-                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs)
+                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs, legal_actions)
                 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
                 eps_reward += reward
