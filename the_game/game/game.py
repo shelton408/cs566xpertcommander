@@ -10,10 +10,13 @@ HANDSIZES = {
 
 
 class Game:
-    def __init__(self, num_players, num_cards=98):
+    def __init__(self, num_players, num_cards=98, is_static_drawpile=False):
         self.minMoveSize = 2
         self.num_players = num_players
         self.num_cards = num_cards
+        self.is_static_drawpile = is_static_drawpile
+        self.static_drawpile = np.random.shuffle(np.arange(2, self.num_cards + 2)) if is_static_drawpile else np.array([])
+
         self.handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         self.state = {
             'current_player': 0,
@@ -63,8 +66,11 @@ class Game:
 
         self.state['decks'] = np.array([1, 1, self.num_cards + 2, self.num_cards + 2])  # First two decks are ascending, other are descending
 
-        drawpile = np.arange(2, self.num_cards + 2)
-        np.random.shuffle(drawpile)
+        if not self.is_static_drawpile:
+            drawpile = np.arange(2, self.num_cards + 2)
+            np.random.shuffle(drawpile)
+        else:
+            drawpile = self.static_drawpile
         self.state['drawpile'] = drawpile
 
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
