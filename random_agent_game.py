@@ -8,7 +8,8 @@ NUM_OF_CARDS = 50
 config = {
     'num_players': NUM_OF_RANDOM_PLAYERS,
     'log_filename': './logs/random_agent.log',
-    # 'total_num_cards': NUM_OF_CARDS
+    # 'total_num_cards': NUM_OF_CARDS,
+    'static_drawpile': True
 }
 env = Env(config)
 

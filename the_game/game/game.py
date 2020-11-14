@@ -15,7 +15,12 @@ class Game:
         self.num_players = num_players
         self.num_cards = num_cards
         self.is_static_drawpile = is_static_drawpile
-        self.static_drawpile = np.random.shuffle(np.arange(2, self.num_cards + 2)) if is_static_drawpile else np.array([])
+
+        if self.is_static_drawpile:
+            self.static_drawpile = np.arange(2, self.num_cards + 2)
+            np.random.shuffle(self.static_drawpile)
+        else:
+            self.static_drawpile = np.array([])
 
         self.handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         self.state = {
@@ -54,7 +59,7 @@ class Game:
             'players': [],
             'num_moves_taken': 0,
             'number_of_cards': self.num_cards,
-            'drawpile': [],
+            'drawpile': np.array([]),
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
@@ -70,7 +75,7 @@ class Game:
             drawpile = np.arange(2, self.num_cards + 2)
             np.random.shuffle(drawpile)
         else:
-            drawpile = self.static_drawpile
+            drawpile = self.static_drawpile.copy()
         self.state['drawpile'] = drawpile
 
         handsize = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
