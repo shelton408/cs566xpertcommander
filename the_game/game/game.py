@@ -119,16 +119,19 @@ class Game:
     def get_legal_actions(self, agent_id):
         one_hot = []
         legal_actions = []
+        while self.state['hands'][agent_id].shape[0] < 8:
+            self.state['hands'][agent_id]  = np.append([0], self.state['hands'][agent_id])
+        self.state['hands'][agent_id] = self.state['hands'][agent_id][-8:]
         for c_id, c_value in enumerate(self.state['hands'][agent_id]):
             for d_id, d_value in enumerate(self.state['decks']):
                 isAscending = True if d_id in [0, 1] else False
-                if self._is_legal_move(d_value, c_value, isAscending):
+                if c_value and self._is_legal_move(d_value, c_value, isAscending):
                     one_hot.append(1)
                     legal_actions.append((c_id, d_id))
                 else:
                     one_hot.append(0)
-        while len(one_hot) < self.state['handsize']*4:
-            one_hot.append(0)
+        # while len(one_hot) < self.state['handsize']*4:
+        #     one_hot.append(0)
         if self.state['num_moves_taken'] >= self.minMoveSize:
             legal_actions.append((-1, -1))  # Encode the end-turn action as negative value
             one_hot.append(1)
@@ -149,7 +152,7 @@ class Game:
 
         if action == (-1, -1):  # End of turn action
             new_cards = self.draw(self.state['num_moves_taken'])
-            self.state['hands'][self.state['current_player']] = np.append(self.state['hands'][self.state['current_player']], new_cards)
+            self.state['hands'][self.state['current_player']] = np.sort(np.append(self.state['hands'][self.state['current_player']], new_cards))
             self.state['num_moves_taken'] = 0
 
             # Because players get removed from self.state['players'] in the endgame when they

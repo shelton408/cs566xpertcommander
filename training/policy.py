@@ -84,7 +84,7 @@ class Policy():
         ### 3. Compute the entropy of the distribution.
         ####################################################################################
         logits = self.actor(state)
-        dist = Categorical(logits)
+        dist = Categorical(probs = logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
