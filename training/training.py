@@ -130,14 +130,8 @@ class Trainer():
                 #agent action
                 #action, log_prob = agents[state['current_player']].act(state)
 
-                all_prob = policy.act(obs)
-                mask = torch.tensor(env.game.state['legal_actions'][0], dtype=torch.float32)
-                valid_prob = mask * all_prob
-                rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
+                action, log_prob = policy.act(obs, env.game.state['legal_actions'][0])
                 
-                dist = Categorical(probs = rescaled_valid_prob)
-                action = dist.sample() #sampling
-                log_prob = dist.log_prob(action)
                 if int(action) <= len(env.game.state['legal_actions'][0]) - 1:
                     state, next_player = env.step(action)
                 else:

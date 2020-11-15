@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
+import torch.optim as optim 
 # import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 # from utils import count_model_params
-
 
 class ActorNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
@@ -48,7 +47,7 @@ class Policy():
         self.policy_epochs = policy_epochs
         self.entropy_coef = entropy_coef
 
-    def act(self, state):
+    def act(self, state, legal_action):
         ############################## TODO: YOUR CODE BELOW ###############################
         ### 1. Run the actor network on the current state to get the action logits       ###
         ### 2. Build a Categorical(...) instance from the logits                         ###
@@ -57,11 +56,14 @@ class Policy():
         ### https://pytorch.org/docs/stable/distributions.html#torch.distributions.categorical.Categorical
         ####################################################################################
         all_prob = self.actor(state)
-        # dist = Categorical(logits)
-        # action = dist.sample()
+        mask = torch.tensor(legal_action, dtype=torch.float32)
+        valid_prob = mask * all_prob
+        rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
+        dist = Categorical(probs = rescaled_valid_prob)
+        action = dist.sample() #sampling
+        log_prob = dist.log_prob(action)
         ################################# END OF YOUR CODE #################################
-        # log_prob = dist.log_prob(action)
-        return all_prob
+        return action, log_prob
 
     def evaluate_actions(self, state, action):
         '''
@@ -81,10 +83,8 @@ class Policy():
         ###          You may find `action.squeeze(...)` helpful.
         ### 3. Compute the entropy of the distribution.
         ####################################################################################
-        all_prob = self.actor(state)
-        valid_prob = mask * all_prob
-        rescaled_valid_prob = valid_prob / torch.sum(valid_prob)
-        dist = Categorical(probs = rescaled_valid_prob)
+        logits = self.actor(state)
+        dist = Categorical(logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
@@ -101,7 +101,6 @@ class Policy():
             data = rollouts.batch_sampler(self.batch_size)
             for sample in data:
                 actions_batch, returns_batch, obs_batch = sample
-
                 # Compute Log probabilities and entropy for each sampled (state, action)
                 log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch)
 
@@ -117,7 +116,6 @@ class Policy():
                 ################################# END OF YOUR CODE #################################
 
                 loss = policy_loss + self.entropy_coef * entropy_loss
-
                 self.optimizer.zero_grad()
                 loss.backward(retain_graph=False)
                 self.optimizer.step()

@@ -14,13 +14,13 @@ policy_params = ParamDict(
     policy_class=Policy,   # Policy class to use (replaced later)
     hidden_dim=128,         # dimension of the hidden state in actor network
     learning_rate=1e-3,    # learning rate of policy update
-    batch_size=1024,       # batch size for policy update
+    batch_size=128,       # batch size for policy update
     policy_epochs=4,       # number of epochs per policy update
     entropy_coef=0.001    # hyperparameter to vary the contribution of entropy loss
 )
 params = ParamDict(
     policy_params=policy_params,
-    rollout_size=100,     # number of collected rollout steps per policy update
+    rollout_size=200,     # number of collected rollout steps per policy update
     num_updates=50,       # number of training policy iterations
     discount=0.99,        # discount factor
     plotting_iters=10,    # interval for logging graphs and policy rollouts
