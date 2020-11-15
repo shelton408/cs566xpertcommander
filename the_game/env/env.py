@@ -1,6 +1,7 @@
 from the_game import Game
 import numpy as np
 import logging
+import torch
 
 
 class Env:
@@ -44,11 +45,24 @@ class Env:
 
     def run(self):
         state, agent_id = self.init_game()
-        self.get_state()
+        # self.get_encoded_state()
         logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
 
         while not self._is_over():
             action_id = self.agents[agent_id].step(state)
+            next_state, next_agent_id = self.step(action_id)
+            state = next_state
+            agent_id = next_agent_id
+            logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
+        
+    def run_PG(self, policy):
+        state, agent_id = self.init_game()
+        obs = self.get_encoded_state()
+        logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
+
+        while not self._is_over():
+            obs = torch.tensor(obs, dtype=torch.float32)
+            action_id, _ = policy.act(obs, self.game.state['legal_actions'][0])
             next_state, next_agent_id = self.step(action_id)
             state = next_state
             agent_id = next_agent_id

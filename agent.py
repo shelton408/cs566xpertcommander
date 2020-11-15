@@ -4,6 +4,9 @@ import sys
 import logging
 from training.utils import ParamDict
 from training.training import Trainer
+from utils import plot_learning_curve
+import warnings
+warnings.filterwarnings("ignore")
 
 sys.path.append('../')
 from cs566xpertcommander.the_game import Env
@@ -21,7 +24,7 @@ policy_params = ParamDict(
 params = ParamDict(
     policy_params=policy_params,
     rollout_size=5000,     # number of collected rollout steps per policy update
-    num_updates=200,       # number of training policy iterations
+    num_updates=100,       # number of training policy iterations
     discount=0.999,        # discount factor
     plotting_iters=50,    # interval for logging graphs and policy rollouts
     # env_name=Env(),  # we are using a tiny environment here for testing
@@ -41,3 +44,11 @@ rollouts, policy = instantiate(params)
 trainer = Trainer()
 rewards, success_rate = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
+
+evaluations = []
+num_iter = 50
+for i in range(num_iter):  # lets play 50 games
+    env.run_PG(policy)
+    evaluations.append(env.get_num_cards_in_drawpile())
+print('GAME OVER!')
+plot_learning_curve(evaluations, num_iter)
