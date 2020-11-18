@@ -88,7 +88,7 @@ class Trainer():
 
     def reset_game(self, env):
         env.init_game()
-        return env.game.state, env.get_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
+        return env.game.state, env.get_encoded_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
     def train(self, env, rollouts, policy, params):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
@@ -146,13 +146,17 @@ class Trainer():
                 # else:
                 #     game_state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
                 # action_tensor = torch.tensor(action, dtype=torch.float32)
-                obs = env.get_state()
+                obs = env.get_encoded_state()
 
                 #if our play reduces us by more than 5 playable cards, negatives reward, else positive
                 curr_eval = env.game.num_playable()
                 reward = (curr_eval - prev_eval)/5 + 1
                 prev_eval = curr_eval
                 done = env.game.is_over()
+                # if done:
+                #     reward = 50 / env.game.num_playable()
+                # else:
+                #     reward = 0
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs)
                 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
@@ -184,6 +188,6 @@ class Trainer():
             # if j % self.params['plotting_iters'] == 0 and j != 0:
             #     plot_learning_curve(rewards, success_rate, params.num_updates)
             #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
-            print('Deck end sizes:{}'.format(deck_end_sizes))
+            print('av deck size: {}, games_played: {}'.format(np.sum(deck_end_sizes) / len(deck_end_sizes), len(deck_end_sizes)))
         return rewards, success_rate
 
