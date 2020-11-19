@@ -95,7 +95,7 @@ class Trainer():
 
     def train(self, env, rollouts, policy, params):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
-        rewards, success_rate = [], []
+        rewards, deck_avgs = [], []
 
         print("Training model with {} parameters...".format(policy.num_params))
 
@@ -104,7 +104,7 @@ class Trainer():
         '''
         for j in range(params.num_updates):
             ## Initialization
-            avg_eps_reward, avg_success_rate = AverageMeter(), AverageMeter()
+            avg_eps_reward = AverageMeter()
             #minigrid resets the game after each rollout, we should either make rollout size big enough to reach endgame, or not
             done = False
             game_state, prev_obs = self.reset_game(env)
@@ -119,8 +119,6 @@ class Trainer():
                     # # Store episode statistics
                     avg_eps_reward.update(eps_reward)
                     deck_end_sizes.append(len(env.game.state['drawpile']))
-                    # if 'success' in info: 
-                    #     avg_success_rate.update(int(info['success']))
 
                     # Reset Environment
                     game_state, obs = self.reset_game(env)
@@ -187,8 +185,8 @@ class Trainer():
 
             ## log metrics
             rewards.append(avg_eps_reward.avg)
-            if avg_success_rate.count > 0:
-                success_rate.append(avg_success_rate.avg)
+            avg_deck_end_size = np.sum(deck_end_sizes) / len(deck_end_sizes)
+            deck_avgs.append(avg_deck_end_size)
             rollout_time.update(rollout_done_time - start_time)
             update_time.update(update_done_time - rollout_done_time)
             print('it {}: avgR: {:.3f} -- rollout_time: {:.3f}sec -- update_time: {:.3f}sec'.format(j, avg_eps_reward.avg, 
@@ -197,6 +195,6 @@ class Trainer():
             # if j % self.params['plotting_iters'] == 0 and j != 0:
             #     plot_learning_curve(rewards, success_rate, params.num_updates)
             #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
-            print('av deck size: {}, games_played: {}'.format(np.sum(deck_end_sizes) / len(deck_end_sizes), len(deck_end_sizes)))
-        return rewards, success_rate
+            print('av deck size: {}, games_played: {}'.format(avg_deck_end_size, len(deck_end_sizes)))
+        return rewards, deck_avgs
 

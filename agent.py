@@ -6,6 +6,7 @@ from training.utils import ParamDict
 from training.training import Trainer
 from utils import plot_learning_curve
 import warnings
+import torch
 warnings.filterwarnings("ignore")
 
 sys.path.append('../')
@@ -35,14 +36,14 @@ NUM_OF_PLAYERS = 1
 config = {
     'num_players': NUM_OF_PLAYERS,
     'log_filename': './logs/policy_agent.log',
-    'static_drawpile': 0,
+    'static_drawpile': False,
 }
 logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)
 
 rollouts, policy = instantiate(params)
 trainer = Trainer()
-rewards, success_rate = trainer.train(env, rollouts, policy, params)
+rewards, deck_ends = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
 
 evaluations = []
@@ -51,4 +52,5 @@ for i in range(num_iter):  # lets play 50 games
     env.run_PG(policy)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
+plot_learning_curve(deck_ends, params.num_updates)
 plot_learning_curve(evaluations, num_iter)
