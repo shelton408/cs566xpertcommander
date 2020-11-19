@@ -67,6 +67,7 @@ class Env:
             next_state, next_agent_id = self.step(action_id)
             state = next_state
             agent_id = next_agent_id
+            obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
 
 
