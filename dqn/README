@@ -1,0 +1,5 @@
+1. Go to https://rlcard.org/ and install the rlcard
+2. copy thegame folder to rlcard/games
+3. copy envs folder to rlcard/envs
+4. Currently the reward is: after take the action, if the next state has at least one legal action, the reward is 1; if the next state has no leagal action, the reward is -1. You can change the reward to try your idea.
+5. Currently the game is a simpler version with 48 cards(2-50) which can run faster than the real game.
