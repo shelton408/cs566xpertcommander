@@ -10,7 +10,7 @@ class Env:
     '''
 
     def __init__(self, config):
-        is_static_drawpile = 'static_drawpile' in config
+        is_static_drawpile = config['static_drawpile']
 
         if 'total_num_cards' in config:
             self.game = Game(config['num_players'], num_cards=config['total_num_cards'], is_static_drawpile=is_static_drawpile)
@@ -59,10 +59,11 @@ class Env:
         state, agent_id = self.init_game()
         obs = self.get_encoded_state()
         logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
-
         while not self._is_over():
             obs = torch.tensor(obs, dtype=torch.float32)
-            action_id, _ = policy.act(obs, self.game.state['legal_actions'][0])
+            curr_player = self.game.state['current_player']
+            original_legal_actions = self.game.state['legal_actions'][curr_player]
+            action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
             next_state, next_agent_id = self.step(action_id)
             state = next_state
             agent_id = next_agent_id

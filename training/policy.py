@@ -26,7 +26,7 @@ class ActorNetwork(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, num_actions),
-            nn.Softmax(dim = -1)
+            #nn.Softmax(dim = -1)
         )
         ################################# END OF YOUR CODE #################################
 
@@ -55,17 +55,21 @@ class Policy():
         ### Documentation of Categorical:                                                ###
         ### https://pytorch.org/docs/stable/distributions.html#torch.distributions.categorical.Categorical
         ####################################################################################
-        all_prob = self.actor(state)
+        # all_prob = self.actor(state)
+        # mask = torch.abs(torch.tensor(legal_action, dtype=torch.float32))
+        # valid_prob = mask * all_prob
+        #rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
+        logits = self.actor(state)
         mask = torch.tensor(legal_action, dtype=torch.float32)
-        valid_prob = mask * all_prob
-        rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
-        dist = Categorical(probs = rescaled_valid_prob)
+        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+
+        dist = Categorical(logits = legal_logits)
         action = dist.sample() #sampling
         log_prob = dist.log_prob(action)
         ################################# END OF YOUR CODE #################################
         return action, log_prob
 
-    def evaluate_actions(self, state, action):
+    def evaluate_actions(self, state, action, legal_actions):
         '''
         Evaluate the log probability of an action under the policy's output
         distribution for a given state.
@@ -83,8 +87,11 @@ class Policy():
         ###          You may find `action.squeeze(...)` helpful.
         ### 3. Compute the entropy of the distribution.
         ####################################################################################
+        #probs = self.actor(state) * torch.abs(torch.tensor(legal_actions, dtype=torch.float32))
         logits = self.actor(state)
-        dist = Categorical(probs = logits)
+        mask = torch.tensor(legal_actions, dtype=torch.float32)
+        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+        dist = Categorical(logits=legal_logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
@@ -100,9 +107,9 @@ class Policy():
         for epoch in range(self.policy_epochs):
             data = rollouts.batch_sampler(self.batch_size)
             for sample in data:
-                actions_batch, returns_batch, obs_batch = sample
+                actions_batch, returns_batch, obs_batch, legal_actions_batch = sample
                 # Compute Log probabilities and entropy for each sampled (state, action)
-                log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch)
+                log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch)
 
                 ############################## TODO: YOUR CODE BELOW ###############################
                 ### 4. Compute the mean loss for the policy update using action log-             ###
