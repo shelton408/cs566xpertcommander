@@ -134,7 +134,7 @@ class Trainer():
                 #action, log_prob = agents[state['current_player']].act(state)
                 curr_player = env.game.state['current_player']
                 original_legal_actions = env.game.state['legal_actions'][curr_player]
-                legal_actions = original_legal_actions  #[.01 if x==0 else x for x in original_legal_actions]
+                legal_actions = [-500 if x==0 else 0 for x in original_legal_actions]
 
                 action, log_prob = policy.act(obs, legal_actions)
                 
@@ -164,7 +164,7 @@ class Trainer():
                     # else:
                     #     reward = 0
                 else:
-                    reward = -10
+                    reward = -20
                 done = env.game.is_over()
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions))
                 

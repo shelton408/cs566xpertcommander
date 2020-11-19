@@ -26,7 +26,7 @@ class ActorNetwork(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, num_actions),
-            nn.Softmax(dim = -1)
+            #nn.Softmax(dim = -1)
         )
         ################################# END OF YOUR CODE #################################
 
@@ -55,11 +55,15 @@ class Policy():
         ### Documentation of Categorical:                                                ###
         ### https://pytorch.org/docs/stable/distributions.html#torch.distributions.categorical.Categorical
         ####################################################################################
-        all_prob = self.actor(state)
-        mask = torch.abs(torch.tensor(legal_action, dtype=torch.float32))
-        valid_prob = mask * all_prob
-        rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
-        dist = Categorical(probs = rescaled_valid_prob)
+        # all_prob = self.actor(state)
+        # mask = torch.abs(torch.tensor(legal_action, dtype=torch.float32))
+        # valid_prob = mask * all_prob
+        #rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
+        logits = self.actor(state)
+        mask = torch.tensor(legal_action, dtype=torch.float32)
+        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+
+        dist = Categorical(logits = legal_logits)
         action = dist.sample() #sampling
         log_prob = dist.log_prob(action)
         ################################# END OF YOUR CODE #################################
@@ -83,8 +87,11 @@ class Policy():
         ###          You may find `action.squeeze(...)` helpful.
         ### 3. Compute the entropy of the distribution.
         ####################################################################################
-        probs = self.actor(state) * torch.abs(torch.tensor(legal_actions, dtype=torch.float32))
-        dist = Categorical(probs = probs)
+        #probs = self.actor(state) * torch.abs(torch.tensor(legal_actions, dtype=torch.float32))
+        logits = self.actor(state)
+        mask = torch.tensor(legal_actions, dtype=torch.float32)
+        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+        dist = Categorical(logits=legal_logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
