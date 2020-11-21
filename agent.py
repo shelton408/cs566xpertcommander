@@ -46,6 +46,8 @@ trainer = Trainer()
 rewards, deck_ends = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
 
+torch.save(policy.actor.state_dict(), './models/duelingDQN.pt')
+
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games

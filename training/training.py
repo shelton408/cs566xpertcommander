@@ -171,13 +171,12 @@ class Trainer():
                     reward = -20
                 done = env.game.is_over()
 
+                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob,
+                                torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions),
+                                torch.tensor(obs, dtype=torch.float32))
+
                 if isinstance(policy, DuelDQN):
-                    rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob,
-                                    torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions), torch.tensor(obs, dtype=torch.float32))
                     policy.total_t += 1
-                else:
-                    rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob,
-                                    torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions))
 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
                 eps_reward += reward

@@ -42,14 +42,12 @@ config = {
 logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)
 
-rollouts, policy = instantiate(params)
+rollouts, dueling_dqn = instantiate(params)
 trainer = Trainer()
-rewards, deck_ends = trainer.train(env, rollouts, policy, params)
+rewards, deck_ends = trainer.train(env, rollouts, dueling_dqn, params)
 print("Training completed!")
 
-torch.save(policy.state_dict(), './models/duelingDQN.pt')
-
-plot_learning_curve(deck_ends, params.num_updates)
+torch.save(dueling_dqn.Q.state_dict(), './models/duelingDQN.pt')
 
 evaluations = []
 num_iter = 50
@@ -57,5 +55,5 @@ for i in range(num_iter):  # lets play 50 games
     env.run_PG(policy)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
-
+plot_learning_curve(deck_ends, params.num_updates)
 plot_learning_curve(evaluations, num_iter)
