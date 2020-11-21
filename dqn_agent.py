@@ -47,6 +47,8 @@ trainer = Trainer()
 rewards, deck_ends = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
 
+torch.save(policy.state_dict(), './models/duelingDQN.pt')
+
 plot_learning_curve(deck_ends, params.num_updates)
 
 evaluations = []
