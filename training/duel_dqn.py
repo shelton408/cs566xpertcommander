@@ -85,19 +85,14 @@ class DuelDQN():
                 qvals = self.Q(state)
                 mask = torch.tensor(legal_action, dtype=torch.float32)
 
-                prob = torch.exp(qvals)
-                valid_prob = prob * mask
+                #prob = torch.exp(qvals)
+                # valid_prob = prob * mask
+                valid_prob = qvals * mask
 
                 # Categorical() will automatically scale the probs
                 dist = Categorical(probs=valid_prob)
 
                 action = torch.argmax(valid_prob)
-                # avoid getting stuck
-                if action == 32: # not play
-                    try_something_else = np.random.rand() < 0.1
-                    if try_something_else:
-                        valid_prob[action] = 0
-                        action = torch.argmax(valid_prob)
 
                 log_prob = dist.log_prob(action)
 

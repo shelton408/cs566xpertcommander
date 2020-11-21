@@ -47,7 +47,7 @@ class Policy():
         self.policy_epochs = policy_epochs
         self.entropy_coef = entropy_coef
 
-    def act(self, state, legal_action, Training=True):
+    def act(self, state, legal_action, training=True):
         ############################## TODO: YOUR CODE BELOW ###############################
         ### 1. Run the actor network on the current state to get the action logits       ###
         ### 2. Build a Categorical(...) instance from the logits                         ###

@@ -9,14 +9,6 @@ from training.policy import Policy
 import warnings
 warnings.filterwarnings("ignore")
 
-NUM_OF_PLAYERS = 2
-config = {
-    'num_players': NUM_OF_PLAYERS,
-    'log_filename': './logs/policy_agent.log',
-    'static_drawpile': False,
-}
-env = Env(config)
-
 # hyperparameters
 policy_params = ParamDict(
     policy_class=Policy,   # Policy class to use (replaced later)
@@ -58,11 +50,19 @@ params = ParamDict(
 rollouts, dqn = instantiate(params)
 dqn.Q.load_state_dict(torch.load('./models/duelingDQN.pt'))
 
+NUM_OF_PLAYERS = 2
+config = {
+    'num_players': NUM_OF_PLAYERS,
+    'log_filename': './logs/policy_agent.log',
+    'static_drawpile': False,
+}
+env = Env(config)
+
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_agents([policy,dqn])
+    env.run_agents([policy, dqn])
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 
-plot_learning_curve(evaluations, num_iter)
+plot_testing(evaluations, num_iter)

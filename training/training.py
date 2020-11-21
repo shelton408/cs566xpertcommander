@@ -30,7 +30,7 @@ class RolloutStorage():
         self.log_probs[step].copy_(log_prob)
         self.rewards[step].copy_(reward)
         self.obs[step].copy_(obs)
-        self.next_obs[step].copy_(next_obs)
+        self.next_obs[step].copy_(next_obs)  # needed for DQN
         self.legal_actions[step].copy_(legal_actions)
 
     def reset(self):
