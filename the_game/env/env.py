@@ -63,7 +63,8 @@ class Env:
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
-            action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            # action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            action_id, _ = policy.act(obs, original_legal_actions, training=False)
             next_state, next_agent_id = self.step(action_id)
             state = next_state
             agent_id = next_agent_id

@@ -81,7 +81,7 @@ class DuelDQN():
 
             log_prob = dist.log_prob(action)
         else:
-            with torch.no_grad:
+            with torch.no_grad():
                 qvals = self.Q(state)
                 mask = torch.tensor(legal_action, dtype=torch.float32)
 
