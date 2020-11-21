@@ -20,7 +20,8 @@ policy_params = ParamDict(
     learning_rate=1e-3,    # learning rate of policy update
     batch_size=1024,       # batch size for policy update
     policy_epochs=25,       # number of epochs per policy update
-    entropy_coef=0.001    # hyperparameter to vary the contribution of entropy loss
+    entropy_coef=0.001,    # hyperparameter to vary the contribution of entropy loss
+    gamma=0.999
 )
 params = ParamDict(
     policy_params=policy_params,
