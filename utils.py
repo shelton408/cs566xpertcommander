@@ -12,3 +12,11 @@ def plot_learning_curve(evals, num_it, num_cards=98):
     plt.xlabel('train iter')
     plt.grid('on')
     plt.show()
+
+def plot_testing(evals, num_games, num_cards=98):
+    plt.plot(evals, label='num cards left')
+    plt.ylim([0, num_cards])
+    plt.xlim([0, num_games - 1])
+    plt.xlabel('Game')
+    plt.grid('on')
+    plt.show()

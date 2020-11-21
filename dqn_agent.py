@@ -4,7 +4,7 @@ import sys
 import logging
 from training.utils import ParamDict
 from training.training import Trainer
-from utils import plot_learning_curve
+from utils import plot_learning_curve, plot_testing
 import warnings
 import torch
 warnings.filterwarnings("ignore")
@@ -52,8 +52,8 @@ torch.save(dueling_dqn.Q.state_dict(), './models/duelingDQN.pt')
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_PG(policy)
+    env.run_PG(dueling_dqn)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 plot_learning_curve(deck_ends, params.num_updates)
-plot_learning_curve(evaluations, num_iter)
+plot_testing(evaluations, num_iter)

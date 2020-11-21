@@ -71,6 +71,22 @@ class Env:
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
 
+    def run_agents(self, agents):
+        self.set_agents(agents)
+        state, agent_id = self.init_game()
+        obs = self.get_encoded_state()
+        logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
+        while not self._is_over():
+            obs = torch.tensor(obs, dtype=torch.float32)
+            curr_player = self.game.state['current_player']
+            original_legal_actions = self.game.state['legal_actions'][curr_player]
+            # action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, training=False)
+            next_state, next_agent_id = self.step(action_id)
+            state = next_state
+            agent_id = next_agent_id
+            obs = self.get_encoded_state()
+            logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
 
 
     def _get_legal_actions(self):
