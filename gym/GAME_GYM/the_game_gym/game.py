@@ -8,7 +8,7 @@ HANDSIZES = {
     '3': 6,  # 6 cards in hand for 3 of more players
 }
 
-ILLEGAL_ACTION_REWARD = -1
+ILLEGAL_ACTION_REWARD = -0.001
 ACTION_REWARD = 1
 END_TURN_REWARD = 2
 

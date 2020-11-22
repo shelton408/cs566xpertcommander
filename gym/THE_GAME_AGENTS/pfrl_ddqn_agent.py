@@ -1,28 +1,14 @@
 import pfrl
 import torch
-import torch.nn
+import torch.nn as nn
 import gym
 import the_game_gym
+from torch.distributions.categorical import Categorical
 import numpy
 
 
-# class QFunction(torch.nn.Module):
-#
-#     def __init__(self, obs_size, n_actions):
-#         super().__init__()
-#         self.l1 = torch.nn.Linear(obs_size, 50)
-#         self.l2 = torch.nn.Linear(50, 50)
-#         self.l3 = torch.nn.Linear(50, n_actions)
-#
-#     def forward(self, x):
-#         h = x
-#         h = torch.nn.functional.relu(self.l1(h))
-#         h = torch.nn.functional.relu(self.l2(h))
-#         h = self.l3(h)
-#         return pfrl.action_value.DiscreteActionValue(h)
 
-
-env = gym.make('1-player-static-full-game-v0')
+env = gym.make('1-player-full-game-v0')
 print('observation space:', env.observation_space)
 print('action space:', env.action_space)
 
@@ -36,9 +22,8 @@ print('reward:', r)
 print('done:', done)
 print('info:', info)
 
-obs_size = env.observation_space.n
+obs_size = env.observation_space.shape[0]
 n_actions = env.action_space.n
-# q_func = QFunction(obs_size, n_actions)
 
 q_func = torch.nn.Sequential(
     torch.nn.Linear(obs_size, 200),
@@ -65,7 +50,7 @@ explorer = pfrl.explorers.ConstantEpsilonGreedy(
 
 # DQN uses Experience Replay.
 # Specify a replay buffer and its capacity.
-replay_buffer = pfrl.replay_buffers.ReplayBuffer(capacity=10 ** 8)
+replay_buffer = pfrl.replay_buffers.ReplayBuffer(capacity=10 ** 6)
 
 gpu = -1
 
@@ -114,6 +99,7 @@ for i in range(1, n_episodes + 1):
         print('episode:', i, 'R:', R)
         print('drawpile:', len(env.game.state['drawpile']))
         print('num moves:', Moves, '\n')
+        print(env.render())
     if i % 50 == 0:
         print('statistics:', agent.get_statistics())
 print('Finished.')
