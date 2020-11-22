@@ -1,18 +1,14 @@
-from training.policy import Policy
-from training.AC_policy import ACPolicy
-from training.PPO import PPO
+import torch
 from training.instantiate import instantiate
-import sys
-import logging
-from training.utils import ParamDict
+from training.PPO import PPO
 from training.training import Trainer
+from training.utils import ParamDict
 from utils import plot_learning_curve
+from cs566xpertcommander.the_game import Env
+from training.policy import Policy
+
 import warnings
 warnings.filterwarnings("ignore")
-
-sys.path.append('../')
-from cs566xpertcommander.the_game import Env
-
 
 # hyperparameters
 policy_params = ParamDict(
@@ -26,30 +22,31 @@ policy_params = ParamDict(
 params = ParamDict(
     policy_params=policy_params,
     rollout_size=5000,     # number of collected rollout steps per policy update
-    num_updates=200,       # number of training policy iterations
+    num_updates=100,       # number of training policy iterations
     discount=0.99,        # discount factor
     plotting_iters=100,    # interval for logging graphs and policy rollouts
     # env_name=Env(),  # we are using a tiny environment here for testing
 )
+rollouts, policy = instantiate(params)
+# policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
-NUM_OF_PLAYERS = 1
-
+NUM_OF_PLAYERS = 2
 config = {
     'num_players': NUM_OF_PLAYERS,
-    'log_filename': './logs/policy_agent.log'
+    'log_filename': './logs/policy_agent.log',
+    'static_drawpile': False,
 }
-logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)
-
-rollouts, policy = instantiate(params)
+agents = [policy, policy]
+env.set_agents(agents)
 trainer = Trainer()
-rewards, success_rate = trainer.train(env, rollouts, policy, params)
+rewards, deck_ends = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
 
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_PG(policy)
+    env.run_agents(agents)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 plot_learning_curve(evaluations, num_iter)
