@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
 import torch.optim as optim 
@@ -16,33 +18,24 @@ class QNetwork(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            # nn.Linear(hidden_dim, num_actions),
-        )
-
-        self.value = nn.Sequential(
-            nn.Linear(hidden_dim, 1)
-        )
-
-        self.advantage = nn.Sequential(
-            nn.Linear(hidden_dim, self.num_actions)
+            nn.Linear(hidden_dim, num_actions),
         )
 
     def forward(self, state):
         x = self.fc(state)
-        values = self.value(x)
-        advantages = self.advantage(x)
-        qvals = values + (advantages - advantages.mean())
-        return qvals
+        return x
 
-class DuelDQN():
+class DoubleDQN():
     '''
-    DuelDQN Class used for acting in the environment and updating the Q network.
+    DoubleDQN Class used for acting in the environment and updating the Q network.
     '''
     def __init__(self, num_inputs, num_actions, hidden_dim, learning_rate,
                  batch_size, policy_epochs, entropy_coef=0.001, epsilon_start=1.0,
                  epsilon_end=0.1,
-                 epsilon_decay_steps=20000, gamma=0.999):
+                 epsilon_decay_steps=20000, gamma=0.999, update_target_estimator_every=5):
+
         self.Q = QNetwork(num_inputs, num_actions, hidden_dim)
+        self.target = QNetwork(num_inputs, num_actions, hidden_dim)
         self.optimizer = optim.Adam(self.Q.parameters(), lr=learning_rate)
         self.batch_size = batch_size
         self.policy_epochs = policy_epochs
@@ -50,7 +43,9 @@ class DuelDQN():
         self.gamma = gamma
 
         self.num_actions = num_actions
+        self.train_t = 0
         self.total_t = 0
+        self.update_target_estimator_every = update_target_estimator_every
         self.epsilons = np.linspace(epsilon_start, epsilon_end, epsilon_decay_steps)
         self.epsilon_decay_steps = epsilon_decay_steps
 
@@ -110,12 +105,14 @@ class DuelDQN():
         '''
 
         q_batch = self.Q(state)
-        action_q = q_batch.gather(1, action)
+        action_q_batch = q_batch.gather(1, action)
 
-        next_q_batch = self.Q(next_state)
-        next_q_batch_max = torch.max(next_q_batch, dim=1)[0]
+        with torch.no_grad():
+            next_q_batch = self.Q(next_state)
+            next_q_actions = torch.argmax(next_q_batch, dim=1)
+            next_q_batch_target = self.target(next_state)
 
-        return action_q, next_q_batch_max
+        return action_q_batch, next_q_actions, next_q_batch_target
 
     def update(self, rollouts):
         '''
@@ -129,7 +126,7 @@ class DuelDQN():
             for sample in data:
                 actions_batch, returns_batch, obs_batch, legal_actions_batch, next_obs_batch = sample
                 # Compute Log probabilities and entropy for each sampled (state, action)
-                action_q, next_q_batch_max = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch, next_obs_batch)
+                action_q_batch, next_q_actions, next_q_batch_target = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch, next_obs_batch)
 
                 ############################## TODO: YOUR CODE BELOW ###############################
                 ### 4. Compute the mean loss for the policy update using action log-             ###
@@ -138,14 +135,19 @@ class DuelDQN():
                 ###    *HINT*: PyTorch optimizer is used to minimize by default.                 ###
                 ###     The trick to maximize a quantity is to negate its corresponding loss.    ###
                 ####################################################################################
-                expected_q = returns_batch + self.gamma * next_q_batch_max
-                q_loss = F.mse_loss(action_q, expected_q)
+                action_q_batch_target = returns_batch + self.gamma * next_q_batch_target[next_q_actions]
+                q_loss = F.mse_loss(action_q_batch, action_q_batch_target)
                 ################################# END OF YOUR CODE #################################
 
                 loss = q_loss
                 self.optimizer.zero_grad()
                 loss.backward(retain_graph=False)
                 self.optimizer.step()
+
+        if self.train_t % self.update_target_estimator_every == 0:
+            self.target = deepcopy(self.Q)
+
+        self.train_t += 1
 
     @property
     def num_params(self):
