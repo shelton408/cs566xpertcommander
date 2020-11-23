@@ -130,12 +130,12 @@ class Game:
                 if c_value and self._is_legal_move(d_value, c_value, isAscending):
                     one_hot.append(1)
                     if isAscending:
-                        if (c_value <= self.state['decks'][agent_id] + 2) or (c_value == self.state['decks'][agent_id] - 10):
+                        if (c_value <= self.state['decks'][d_id] + 2) or (c_value == self.state['decks'][d_id] - 10):
                             self.state['hints'][agent_id].append(1)
                         else:
                             self.state['hints'][agent_id].append(0)
                     else:
-                        if (c_value >= self.state['decks'][agent_id] - 2) or (c_value == self.state['decks'][agent_id] + 10):
+                        if (c_value >= self.state['decks'][d_id] - 2) or (c_value == self.state['decks'][d_id] + 10):
                             self.state['hints'][agent_id].append(1)
                         else:
                             self.state['hints'][agent_id].append(0)

@@ -22,7 +22,7 @@ policy_params = ParamDict(
 params = ParamDict(
     policy_params=policy_params,
     rollout_size=5000,     # number of collected rollout steps per policy update
-    num_updates=100,       # number of training policy iterations
+    num_updates=200,       # number of training policy iterations
     discount=0.99,        # discount factor
     plotting_iters=100,    # interval for logging graphs and policy rollouts
     # env_name=Env(),  # we are using a tiny environment here for testing
@@ -40,13 +40,14 @@ env = Env(config)
 agents = [policy, policy]
 env.set_agents(agents)
 trainer = Trainer()
-rewards, deck_ends = trainer.train(env, rollouts, policy, params)
+useHints=True
+rewards, deck_ends = trainer.train(env, rollouts, policy, params, use_hints=useHints)
 print("Training completed!")
 
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_agents(agents)
+    env.run_agents(agents, useHints)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 plot_learning_curve(evaluations, num_iter)

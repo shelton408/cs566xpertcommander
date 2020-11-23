@@ -6,14 +6,17 @@ import torch.optim as optim
 
 
 class PPO(ACPolicy):       
-    def update(self, rollouts): 
+    def update(self, rollouts, use_hints=False): 
         self.clip_param = 0.2
         for epoch in range(self.policy_epochs):
             data = rollouts.batch_sampler(self.batch_size, get_old_log_probs=True)
             
             for sample in data:
                 actions_batch, returns_batch, obs_batch, legal_actions_batch, old_log_probs_batch, hints = sample
-                log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch, hints)
+                if use_hints:
+                    log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch, hints)
+                else:
+                    log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch)
                 
                 value_batch = self.critic(obs_batch)
                 

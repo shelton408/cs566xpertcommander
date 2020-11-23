@@ -97,7 +97,7 @@ class Trainer():
         env.init_game()
         return env.game.state, env.get_encoded_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
-    def train(self, env, rollouts, policy, params):
+    def train(self, env, rollouts, policy, params, use_hints=False):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
         rewards, success_rate = [], []
         av_ds, min_ds, max_ds = [], [], []
@@ -143,7 +143,15 @@ class Trainer():
                 original_legal_actions = env.game.state['legal_actions'][curr_player]
                 legal_actions = [-500 if x==0 else 0 for x in original_legal_actions]
 
-                action, log_prob = policy.act(obs, legal_actions, env.game.state['hints'][1 - curr_player]) # 1-curr_player for 2 player game
+                if len(env.game.state['players']) <= 1:
+                    hints_tensor = torch.zeros(33, dtype=torch.float32)
+                else:
+                    hints_tensor = torch.tensor(env.game.state['hints'][1 - curr_player], dtype=torch.float32)
+
+                if use_hints:
+                    action, log_prob = policy.act(obs, legal_actions, hints_tensor) # 1-curr_player for 2 player game
+                else:
+                    action, log_prob = policy.act(obs, legal_actions)
                 
                 if original_legal_actions[int(action)]:
                     state, next_player = env.step(action)
@@ -183,7 +191,7 @@ class Trainer():
                 #         reward = -0.1
                 # else:
                 #     reward = 0
-                hints_tensor = torch.tensor(env.game.state['hints'][1 - curr_player], dtype=torch.float32)
+                
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions), hints_tensor)
                 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
@@ -198,8 +206,10 @@ class Trainer():
             ################################# END OF YOUR CODE #################################
             
             rollout_done_time = time.time()
-
-            policy.update(rollouts)
+            if use_hints:
+                policy.update(rollouts, use_hints)
+            else:
+                policy.update(rollouts)
             update_done_time = time.time()
             rollouts.reset()
 

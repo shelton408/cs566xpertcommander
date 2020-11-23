@@ -71,7 +71,7 @@ class Env:
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
     
-    def run_agents(self, agents):
+    def run_agents(self, agents, use_hints):
         self.set_agents(agents)
         state, agent_id = self.init_game()
         obs = self.get_encoded_state()
@@ -80,7 +80,10 @@ class Env:
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
-            action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions], self.game.state['hints'][1 - curr_player])
+            if use_hints:
+                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions], self.game.state['hints'][1 - curr_player])
+            else:
+                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
             next_state, next_agent_id = self.step(action_id)
             state = next_state
             agent_id = next_agent_id
@@ -133,7 +136,7 @@ class Env:
         # desc_disc[discard_decks[2:]] = 1
 
 
-        unplayed_cards = np.ones(num_cards)
+        unplayed_cards = np.ones(num_cards) * 0.1
         for i in range(num_cards):
             if not self.game._can_be_played(i+2):
                 unplayed_cards[i] = 0
