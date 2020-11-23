@@ -4,13 +4,15 @@ import torch.nn as nn
 import logging
 import time
 import numpy as np
+
 from training.utils import AverageMeter, flatten
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 from torch.distributions.categorical import Categorical
 
 sys.path.append('../')
-from cs566xpertcommander.the_game import Env      
+from cs566xpertcommander.the_game import Env
 
+from training.duel_dqn import DuelDQN
 
 class RolloutStorage():
     def __init__(self, rollout_size, obs_size): #rollout size determines the number of turns taken per rollout
@@ -19,7 +21,7 @@ class RolloutStorage():
         self.action_size = 33
         self.reset()
 
-    def insert(self, step, done, action, log_prob, reward, obs, legal_actions):
+    def insert(self, step, done, action, log_prob, reward, obs, legal_actions, next_obs=None):
         '''
         Inserting the transition at the current step number in the environment.
         '''
@@ -28,6 +30,7 @@ class RolloutStorage():
         self.log_probs[step].copy_(log_prob)
         self.rewards[step].copy_(reward)
         self.obs[step].copy_(obs)
+        self.next_obs[step].copy_(next_obs)  # needed for DQN
         self.legal_actions[step].copy_(legal_actions)
 
     def reset(self):
@@ -40,6 +43,7 @@ class RolloutStorage():
         self.log_probs = torch.zeros(self.rollout_size, 1)
         self.rewards = torch.zeros(self.rollout_size, 1)
         self.obs = torch.zeros(self.rollout_size, self.obs_size)
+        self.next_obs = torch.zeros(self.rollout_size, self.obs_size)
         self.legal_actions = torch.zeros(self.rollout_size, self.action_size)
 
     def compute_returns(self, gamma):
@@ -55,7 +59,7 @@ class RolloutStorage():
             self.returns[step] = self.rewards[step] + \
                                 self.returns[step + 1] * gamma * (1 - self.done[step])
 
-    def batch_sampler(self, batch_size, get_old_log_probs=False):
+    def batch_sampler(self, batch_size, get_old_log_probs=False, get_next_obs=False):
         '''
         Create a batch sampler of indices. Return actions, returns, observation for training.
         get_old_log_probs: This is required for PPO to recall the log_prob of the action w.r.t.
@@ -68,6 +72,8 @@ class RolloutStorage():
         for indices in sampler:
             if get_old_log_probs:
                 yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.log_probs[indices]
+            elif get_next_obs:
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.next_obs[indices]
             else:
                 yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices]
 
@@ -132,7 +138,7 @@ class Trainer():
                 #action, log_prob = agents[state['current_player']].act(state)
                 curr_player = env.game.state['current_player']
                 original_legal_actions = env.game.state['legal_actions'][curr_player]
-                legal_actions = [-500 if x==0 else 0 for x in original_legal_actions]
+                legal_actions = original_legal_actions
 
                 action, log_prob = policy.act(obs, legal_actions)
                 
@@ -164,8 +170,14 @@ class Trainer():
                 else:
                     reward = -20
                 done = env.game.is_over()
-                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob, torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions))
-                
+
+                rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob,
+                                torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions),
+                                torch.tensor(obs, dtype=torch.float32))
+
+                if isinstance(policy, DuelDQN):
+                    policy.total_t += 1
+
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
                 eps_reward += reward
             

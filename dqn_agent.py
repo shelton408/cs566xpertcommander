@@ -1,4 +1,4 @@
-from training.policy import Policy
+from training.duel_dqn import DuelDQN
 from training.instantiate import instantiate
 import sys
 import logging
@@ -15,12 +15,13 @@ from cs566xpertcommander.the_game import Env
 
 # hyperparameters
 policy_params = ParamDict(
-    policy_class=Policy,   # Policy class to use (replaced later)
+    policy_class=DuelDQN,   # Policy class to use (replaced later)
     hidden_dim=128,         # dimension of the hidden state in actor network
     learning_rate=1e-3,    # learning rate of policy update
     batch_size=1024,       # batch size for policy update
     policy_epochs=25,       # number of epochs per policy update
-    entropy_coef=0.001    # hyperparameter to vary the contribution of entropy loss
+    entropy_coef=0.001,    # hyperparameter to vary the contribution of entropy loss
+    gamma=0.999
 )
 params = ParamDict(
     policy_params=policy_params,
@@ -41,17 +42,17 @@ config = {
 logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)
 
-rollouts, policy = instantiate(params)
+rollouts, dueling_dqn = instantiate(params)
 trainer = Trainer()
-rewards, deck_ends = trainer.train(env, rollouts, policy, params)
+rewards, deck_ends = trainer.train(env, rollouts, dueling_dqn, params)
 print("Training completed!")
 
-torch.save(policy.actor.state_dict(), './models/policy.pt')
+torch.save(dueling_dqn.Q.state_dict(), './models/duelingDQN.pt')
 
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_PG(policy)
+    env.run_PG(dueling_dqn)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 plot_learning_curve(deck_ends, params.num_updates)

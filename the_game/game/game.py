@@ -146,7 +146,8 @@ class Game:
             return (self.state, self.state['current_player'])
         else:
             action = (action_id//4, action_id % 4)
-            if action_id == self.state['handsize']*4:
+            # if action_id == self.state['handsize']*4:
+            if action_id == 32:
                 action = (-1,-1)
 
         if action == (-1, -1):  # End of turn action
