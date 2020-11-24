@@ -21,11 +21,8 @@ class TheGameEnv(Env):
                          deck_size=config['deck_size'],
                          hand_size=hand_size)
         super().__init__(config)
-<<<<<<< Updated upstream
-        self.state_shape = (5, config['deck_size']+2)
-=======
+
         self.state_shape = hand_size + 4 + config['deck_size']  # cards_in_hand + target + playable_card = 8 + 4 + 98 = 110
->>>>>>> Stashed changes
     
     'State encoding can impact the performance. This part can be modified'
     '''
@@ -34,8 +31,6 @@ class TheGameEnv(Env):
         encode_card(obs[0, :], state['hand'])
         encode_target(obs[1:5, :], state['target'])
         # encode_card(obs[-1, :], state['playable_cards'])
-<<<<<<< Updated upstream
-=======
         legal_action_id = self._get_legal_actions()
         extracted_state = {'obs': obs, 'legal_actions': legal_action_id}
         if self.allow_raw_data:
@@ -52,7 +47,7 @@ class TheGameEnv(Env):
         encode_hand(obs[:8], state['hand'])
         encode_target(obs[8:12], state['target'])
         encode_card(obs[12:], state['playable_cards'])
->>>>>>> Stashed changes
+
         legal_action_id = self._get_legal_actions()
 
         extracted_state = {'obs': obs, 'legal_actions': legal_action_id}
@@ -95,7 +90,7 @@ class TheGameEnv(Env):
         state['hand_cards'] = [cards2list(player.hand)
                                for player in self.game.players]
         state['played_cards'] = cards2list(self.game.round.played_cards)
-        state['target'] = target2list(self.game.round.target)
+        state['target'] = targets2list(self.game.round.target)
         state['current_player'] = self.game.round.current_player
         state['legal_actions'] = self.game.round.get_legal_actions(
             self.game.players, state['current_player'])
