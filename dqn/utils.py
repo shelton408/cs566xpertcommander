@@ -336,7 +336,7 @@ def set_global_seed(seed):
         installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
         if 'tensorflow' in installed_packages:
             import tensorflow as tf
-            tf.set_random_seed(seed)
+            tf.compat.v1.random.set_random_seed(seed)
         if 'torch' in installed_packages:
             import torch
             torch.manual_seed(seed)
