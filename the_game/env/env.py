@@ -55,22 +55,34 @@ class Env:
             agent_id = next_agent_id
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
         
-    def run_PG(self, policy):
+    def run_PG(self, policy, render=False):
         state, agent_id = self.init_game()
         obs = self.get_encoded_state()
         logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
+        actions, hands, drawpile = [], [], []
 
         while not self._is_over():
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
             action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
-            next_state, next_agent_id = self.step(action_id)
+            if original_legal_actions[action_id]:
+                if render:
+                    actions.append(action_id)
+                    hands.append(self.game.state['hands'][curr_player])
+                next_state, next_agent_id = self.step(action_id)
+                if render:
+                    drawpile.append(len(self.game.state['drawpile']))
+            else:
+                next_state, next_agent_id = state, agent_id
             state = next_state
             agent_id = next_agent_id
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
-    
+            
+        if render:
+            return actions, hands, drawpile
+            
     def run_agents(self, agents, use_hints):
         self.set_agents(agents)
         state, agent_id = self.init_game()
@@ -84,7 +96,10 @@ class Env:
                 action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions], self.game.state['hints'][1 - curr_player])
             else:
                 action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
-            next_state, next_agent_id = self.step(action_id)
+            if original_legal_actions[action_id]:
+                next_state, next_agent_id = self.step(action_id)
+            else:
+                next_state, next_agent_id = state, agent_id
             state = next_state
             agent_id = next_agent_id
             obs = self.get_encoded_state()

@@ -1,3 +1,4 @@
+import torch
 from training.policy import Policy
 from training.AC_policy import ACPolicy
 from training.PPO import PPO
@@ -45,6 +46,8 @@ rollouts, policy = instantiate(params)
 trainer = Trainer()
 rewards, success_rate = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
+
+torch.save(policy.actor.state_dict(), './models/policy.pt')
 
 evaluations = []
 num_iter = 50
