@@ -389,21 +389,26 @@ def tournament(env, num):
     Returns:
         A list of avrage payoffs for each player
     '''
-    payoffs = [0 for _ in range(env.player_num)]
+
+    payoffs = [0 for _ in range(env.player_num)]    # reward
+    played_card = 0    # played card
     counter = 0
     while counter < num:
-        _, _payoffs = env.run(is_training=False)
+        _trajectories, _payoffs = env.run(is_training=False)
         if isinstance(_payoffs, list):
             for _p in _payoffs:
                 for i, _ in enumerate(payoffs):
-                    payoffs[i] += _p[i]
+                    payoffs[i] += np.sum(_p)
                 counter += 1
         else:
             for i, _ in enumerate(payoffs):
                 payoffs[i] += np.sum(_payoffs[i]) # change for the game
                 # payoffs[i] += _payoffs[i]
             counter += 1
+        played_card += len(_trajectories[0]) - 1
+
     for i, _ in enumerate(payoffs):
         payoffs[i] /= counter
-    return payoffs
+    played_card /= counter
+    return played_card, payoffs[0]  # only one player
 
