@@ -302,17 +302,17 @@ def reorganize(trajectories, payoffs):
     for player in range(player_num):
         for i in range(0, len(trajectories[player])-2, 2):
             'This block is changed for the game for a dense reward'
-            '''
+
             if i ==len(trajectories[player])-3:
                 reward = payoffs[player]
                 done =True
             else:
                 reward, done = 0, False
-            '''
-            reward = payoffs[player][i//2]
-            done = False
-            if i == len(trajectories[player]) - 3:
-                done = True
+
+            # reward = payoffs[player][i//2]
+            # done = False
+            # if i == len(trajectories[player]) - 3:
+            #     done = True
             transition = trajectories[player][i:i+3].copy()
             transition.insert(2, reward)
             transition.append(done)

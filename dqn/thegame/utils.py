@@ -28,6 +28,36 @@ def init_deck(deck_size=98):
     res = [Card(rank) for rank in rank_list]
     return res
 
+def encode_hand(plane, hand):
+    ''' Encode hand and represerve it into plane
+    Args:
+        plane (np array):  numpy array
+        hand (list): list of string of hand's card
+    Returns:
+        (array):  numpy array
+    '''
+    for index, card in enumerate(hand):
+        # card_index = int(card) - 1
+        # plane[card_index] = 1
+        plane[index] = int(card) / 100.0  # normalize to [0, 1]
+    plane.sort()
+
+def encode_target(plane, targets):
+    ''' Encode target and represerve it into plane
+
+    Args:
+        plane (np.array): numpy array
+        targets(str): list of Cards from decks
+
+    Returns:
+        (array): numpy array
+    '''
+    for index, target in enumerate(targets):
+        # target_index = int(target) - 1
+        # plane[index, target_index] = 1
+        plane[index] = int(target) / 100
+    return plane
+
 def encode_card(plane, cards):
     ''' Encode hand and represerve it into plane
 
@@ -42,21 +72,6 @@ def encode_card(plane, cards):
         # cards go from 2-99 so indices 0-97 represent them
         card_index = int(card) - 2
         plane[card_index] = 1
-    return plane
-
-def encode_target(plane, targets):
-    ''' Encode target and represerve it into plane
-
-    Args:
-        plane (np.array): numpy array
-        targets(str): list of Cards from decks
-
-    Returns:
-        (array): numpy array
-    '''
-    for index, target in enumerate(targets):
-        target_index = int(target) - 1
-        plane[index, target_index] = 1
     return plane
 
 def cards2list(cards):

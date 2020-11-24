@@ -12,6 +12,7 @@ DECK_SIZE = 98
 config = {
     'seed': 0,
     'deck_size': DECK_SIZE,
+    "num_players": 1,
     'single_agent_mode': False
 }
 env = rlcard.make('thegame', config=config)
@@ -29,7 +30,7 @@ memory_init_size = 100
 # Train the agent every X steps
 train_every = 1
 
-# The paths for saving the logs and learning curves
+# The paths for saving the experiments and learning curves
 log_dir = './experiments/thegame_dqn_result/'
 
 # Set a global seed
@@ -37,6 +38,8 @@ set_global_seed(0)
 
 # Set up the agents
 agent = DQNAgentPytorch(scope='dqn',
+                        epsilon_decay_steps=20000,
+                        batch_size=64,
                         action_num=env.action_num,
                         replay_memory_size=memory_size,
                         replay_memory_init_size=memory_init_size,

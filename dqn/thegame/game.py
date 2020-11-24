@@ -5,19 +5,15 @@ from rlcard.games.thegame import Dealer
 from rlcard.games.thegame import Player
 from rlcard.games.thegame import Round
 
-HANDSIZES = {
-    '1': 8,
-    '2': 7,
-    '3': 6  # 6 cards on hand for 3 or more players
-}
 
 class TheGame(object):
 
-    def __init__(self, num_players=1, deck_size=98, allow_step_back=False):
+    def __init__(self, num_players=1, deck_size=98, hand_size=8, allow_step_back=False):
         self.allow_step_back = allow_step_back
         self.np_random = np.random.RandomState()
         self.num_players = num_players
         self.deck_size = deck_size
+        self.hand_size = hand_size
 
     def init_game(self):
         ''' Initialize players and state
@@ -29,7 +25,7 @@ class TheGame(object):
                 (int): Current player's id
         '''
         # Initalize payoffs
-        self.payoffs = [0 for _ in range(self.num_players)]
+        self.payoffs = [[] for _ in range(self.num_players)]
 
         # Initialize a dealer that can deal cards
         self.dealer = Dealer(self.np_random)
@@ -37,13 +33,11 @@ class TheGame(object):
         # Initialize one players to play the game
         self.players = [Player(i, self.np_random) for i in range(self.num_players)]
 
-        # deal hands based on num of players
-        self.hand_size = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
         for player in self.players:
             self.dealer.deal_cards(player, self.hand_size)
 
         # Initialize a Round
-        self.round = Round(self.dealer, self.num_players, self.np_random)
+        self.round = Round(self.dealer, self.num_players, self.np_random, deck_size=self.deck_size)
 
         # Save the hisory for stepping back to the last state.
         self.history = []
@@ -109,8 +103,11 @@ class TheGame(object):
             (list): Each entry corresponds to the payoff of one player
         '''
         num_played_cards = len(self.round.played_cards)
-        self.payoffs[0] = [1 for i in range(num_played_cards-1)] + [-1]
+        self.payoffs[0] = num_played_cards / self.deck_size
         return self.payoffs
+
+    def get_playable_cards(self):
+        return self.round.get_playable_cards()
 
     def get_legal_actions(self):
         ''' Return the legal actions for current player

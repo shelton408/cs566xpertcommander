@@ -25,3 +25,6 @@ class TheGameCard(object):
 
     def __int__(self):
         return int(self.rank)
+
+    def diff_ten(self, other):
+        return int(self) == int(other) - 10 or int(self) == int(other) + 10

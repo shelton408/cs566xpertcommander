@@ -21,7 +21,8 @@ class TheGameRound(object):
         self.played_cards = []
         self.is_over = False
         self.is_win = False
-        self.played_turn_cards = []
+        # how many cards the current player has played in its turn
+        self.num_cards_played = 0
         self.min_move_size = 2
 
     def proceed_round(self, players, action):
@@ -31,28 +32,15 @@ class TheGameRound(object):
             players (list): list of Player
             action (str): string of legal action
         '''
-
         player = players[self.current_player]
-        if not action == 'pass':
-            action_info = action.split('-')
-            pile = action_info[0]
-            rank = action_info[1]
-
-            # remove corresponding card
-            remove_index = player.hand.index(rank)
-            card = player.hand.pop(remove_index)
-            # more memory efficient to store as string
-            self.played_cards.append(str(card))
-            self.played_turn_cards.append(card)
-            # update target
-            self.target[pile] = card
 
         # player has ended their turn
         # draw cards and clear cards played this turn
-        else:
-            # draw a card
+        if action == 'draw':
+            # draw cards
             # if deck is empty lower min move requirement
-            self.dealer.deal_cards(player, num=len(self.played_turn_cards))
+            self.dealer.deal_cards(player, num=self.num_cards_played)
+            self.num_cards_played = 0
             if not self.dealer.deck:
                 self.min_move_size = 1
 
@@ -65,8 +53,23 @@ class TheGameRound(object):
                 self.is_over = not player_cards_remaining
                 self.is_win = self.is_over
 
-            self.played_turn_cards = []
             self.current_player = (self.current_player + self.direction) % self.num_players
+
+
+        else:
+            action_info = action.split('-')
+            pile = action_info[0]
+            rank = action_info[1]
+
+            # remove corresponding card
+            remove_index = player.hand.index(rank)
+            card = player.hand.pop(remove_index)
+
+            self.played_cards.append(card)
+            self.num_cards_played += 1
+
+            # update target
+            self.target[pile] = card
 
     def get_legal_actions(self, players, player_id):
         legal_actions = []
@@ -75,42 +78,72 @@ class TheGameRound(object):
         # if card hasn't already been played then check which deck in can go to
         # -1 is a placeholder used for when the deck has been emptied
         for card in hand:
-            if card not in self.played_turn_cards:
-                if card > self.target['a1'] or card == (int(self.target['a1']) - 10):
-                    legal_actions.append('a1-' + card.rank)
-                if card > self.target['a2'] or card == (int(self.target['a2']) - 10):
-                    legal_actions.append('a2-' + card.rank)
-                if card < self.target['d1'] or card == (int(self.target['d1']) + 10):
-                    legal_actions.append('d1-' + card.rank)
-                if card < self.target['d2'] or card == (int(self.target['d2']) + 10):
-                    legal_actions.append('d2-' + card.rank)
+            # asending or +-10
+            if card > self.target['a1'] or card.diff_ten(self.target['a1']):
+                legal_actions.append('a1-' + card.rank)
+            if card > self.target['a2'] or card.diff_ten(self.target['a2']):
+                legal_actions.append('a2-' + card.rank)
+            # descending or +-10
+            if card < self.target['d1'] or card.diff_ten(self.target['d1']):
+                legal_actions.append('d1-' + card.rank)
+            if card < self.target['d2'] or card.diff_ten(self.target['d2']):
+                legal_actions.append('d2-' + card.rank)
 
         # if there are no legal actions, the min amount of cards haven't been played
         # and there are still cards in the deck, the game has been lost
         if not legal_actions \
-                and len(self.played_turn_cards) < self.min_move_size \
+                and self.num_cards_played < self.min_move_size \
                 and self.dealer.deck:
             self.is_over = True
 
         # if the player has played min number of cards, or does not have a hand, they may pass
-        if len(self.played_turn_cards) >= self.min_move_size \
+        if self.num_cards_played >= self.min_move_size \
                 or not hand:
-            legal_actions.append('pass')
+            legal_actions.append('draw')
 
         return legal_actions
+
+    def get_playable_cards(self):
+
+        num_playable_cards = 0
+        deck = self.dealer.deck
+
+        for card in deck:
+            # asending or +-10
+            if card > self.target['a1'] or card.diff_ten(self.target['a1']):
+                num_playable_cards += 1
+            elif card > self.target['a2'] or card.diff_ten(self.target['a2']):
+                num_playable_cards += 1
+            # descending or +-10
+            elif card < self.target['d1'] or card.diff_ten(self.target['d1']):
+                num_playable_cards += 1
+            elif card < self.target['d2'] or card.diff_ten(self.target['d2']):
+                num_playable_cards += 1
+
+        return num_playable_cards
 
     def get_state(self, players, player_id):
         ''' Get player's state
 
         Args:
-            players (list): The list of Player
+            players (list): The list of TheGamePlayer
             player_id (int): The id of the player
         '''
         state = {}
         player = players[player_id]
         state['hand'] = cards2list(player.hand)
         state['target'] = targets2list(self.target) # a1, a2, d1, d2
+        playable_cards = []
+
+        # have to make sure you include cards in other player's hands
+        for other_player in players:
+            if other_player is player:
+                pass
+            else:
+                playable_cards.extend(other_player.hand)
+
+        playable_cards.extend(self.dealer.deck)
+        state['playable_cards'] = cards2list(playable_cards)
         state['played_cards'] = cards2list(self.played_cards)
         state['legal_actions'] = self.get_legal_actions(players, player_id)
-        state['turn_cards'] = self.played_turn_cards
         return state
