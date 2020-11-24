@@ -15,13 +15,16 @@ with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space_50.json')
     ACTION_SPACE = json.load(file, object_pairs_hook=OrderedDict)
     ACTION_LIST = list(ACTION_SPACE.keys())
 
-def init_deck():
-    ''' Initialize a standard deck of 98 cards
+def init_deck(deck_size=98):
+    ''' Initialize a standard deck of cards
+
+    Args:
+        deck_size (int): number of cards in the deck
 
     Returns:
         (list): A list of Card object
     '''
-    rank_list = Card.rank
+    rank_list = [str(i) for i in range(2, deck_size+2)]
     res = [Card(rank) for rank in rank_list]
     return res
 
@@ -29,8 +32,8 @@ def encode_card(plane, cards):
     ''' Encode hand and represerve it into plane
 
     Args:
-        plane (array):  numpy array
-        hand (list): list of string of hand's card
+        plane (np.array):  numpy array
+        cards (list): list of string of hand's card
 
     Returns:
         (array):  numpy array

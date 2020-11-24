@@ -1,18 +1,27 @@
-
 class TheGameCard(object):
-
-    rank =[str(i) for i in range(2, 49)]
 
     def __init__(self, rank):
         ''' Initialize the class of TheGameCard
 
         Args:
-            card_type (str): The type of card
+            rank (str): The number of the card
         '''
         self.rank = str(rank)
 
-    def __gt__(self, other):
-        return int(self.rank) > int(other.rank)
-
     def __lt__(self, other):
-        return int(self.rank) < int(other.rank)
+        return int(self) < int(other)
+
+    def __gt__(self, other):
+        return int(self) > int(other)
+
+    def __eq__(self, other):
+        return int(self) == int(other)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __str__(self):
+        return self.rank
+
+    def __int__(self):
+        return int(self.rank)
