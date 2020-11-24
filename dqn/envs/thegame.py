@@ -12,7 +12,7 @@ class TheGameEnv(Env):
         self.name = 'thegame'
         self.game = Game()
         super().__init__(config)
-        self.state_shape = (5, 50) # cards_in_hand + target + cards_in_deck = 8 + 4 + 98 = 110
+        self.state_shape = (5, config['deck_size']+2)
     
     'State encoding can impact the performance. This part can be modified'
     def _extract_state(self, state):
@@ -46,6 +46,7 @@ class TheGameEnv(Env):
         legal_ids = [ACTION_SPACE[action] for action in legal_actions]
         return legal_ids
 
+    # this appears to never get called
     def get_perfect_information(self):
         ''' Get the perfect information of the current state
 
