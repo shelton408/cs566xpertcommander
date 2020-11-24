@@ -11,7 +11,7 @@ from rlcard.games.thegame.card import TheGameCard as Card
 ROOT_PATH = rlcard.__path__[0]
 
 # a map of abstract action to its index and a list of abstract action
-with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space_50.json'), 'r') as file:
+with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space.json'), 'r') as file:
     ACTION_SPACE = json.load(file, object_pairs_hook=OrderedDict)
     ACTION_LIST = list(ACTION_SPACE.keys())
 
@@ -25,7 +25,8 @@ def init_deck():
     res = [Card(rank) for rank in rank_list]
     return res
 
-def encode_card(plane, cards):
+
+def encode_hand(plane, hand):
     ''' Encode hand and represerve it into plane
 
     Args:
@@ -35,10 +36,14 @@ def encode_card(plane, cards):
     Returns:
         (array):  numpy array
     '''
-    for card in cards:
-        card_index = int(card) - 1
-        plane[card_index] = 1
-    return plane
+    for index, card in enumerate(hand):
+        # card_index = int(card) - 1
+        # plane[card_index] = 1
+        plane[index] = int(card) / 100.0  # normalize to [0, 1]
+    plane.sort()
+    return None
+
+
 
 def encode_target(plane, targets):
     ''' Encode target and represerve it into plane
@@ -51,9 +56,27 @@ def encode_target(plane, targets):
         (array): 50 numpy array
     '''
     for index, target in enumerate(targets):
-        target_index = int(target) - 1
-        plane[index, target_index] = 1
+        # target_index = int(target) - 1
+        # plane[index, target_index] = 1
+        plane[index] = int(target) / 100
     return plane
+
+def encode_card(plane, cards):
+    ''' Encode hand and represerve it into plane
+
+    Args:
+        plane (array):  numpy array
+        hand (list): list of string of hand's card
+
+    Returns:
+        (array):  numpy array
+    '''
+    for index, card in enumerate(cards):
+        card_index = int(card) - 2
+        plane[card_index] = 1
+    return plane
+
+
 
 def cards2list(cards):
     ''' Get the corresponding string representation of cards

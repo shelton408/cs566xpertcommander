@@ -1,7 +1,7 @@
 
 class TheGameCard(object):
 
-    rank =[str(i) for i in range(2, 49)]
+    rank =[str(i) for i in range(2, 100)]
 
     def __init__(self, rank):
         ''' Initialize the class of TheGameCard
@@ -16,3 +16,6 @@ class TheGameCard(object):
 
     def __lt__(self, other):
         return int(self.rank) < int(other.rank)
+
+    def diff_ten(self, other):
+        return int(self.rank) == int(other.rank) - 10 or int(self.rank) == int(other.rank) + 10

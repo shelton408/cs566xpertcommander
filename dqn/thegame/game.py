@@ -23,7 +23,7 @@ class TheGame(object):
                 (int): Current player's id
         '''
         # Initalize payoffs
-        self.payoffs = [0 for _ in range(self.num_players)]
+        self.payoffs = [[] for _ in range(self.num_players)]
 
         # Initialize a dealer that can deal cards
         self.dealer = Dealer(self.np_random)
@@ -95,15 +95,26 @@ class TheGame(object):
         state['current_player'] = self.round.current_player
         return state
 
-    def get_payoffs(self):
+    def get_payoffs(self, state, next_state):
         ''' Return the payoffs of the game
 
         Returns:
             (list): Each entry corresponds to the payoff of one player
         '''
-        num_played_cards = len(self.round.played_cards)
-        self.payoffs[0] = [1 for i in range(num_played_cards-1)] + [-1]
+        
+        if len(next_state['legal_actions']) <= 8:
+            self.payoffs[self.round.current_player].append(-1)
+        else:
+            self.payoffs[self.round.current_player].append(1)
+        
         return self.payoffs
+
+    def get_playable_cards(self):
+        return self.round.get_playable_cards()
+
+    def get_played_cards(self):
+
+        return self.round.played_cards
 
     def get_legal_actions(self):
         ''' Return the legal actions for current player
@@ -127,9 +138,9 @@ class TheGame(object):
         ''' Return the number of applicable actions
 
         Returns:
-            (int): The number of actions. There are 61 actions
+            (int): The number of actions. There are 4*cards + 1 actions
         '''
-        return 4 * 48
+        return 4 * 98 + 1
 
     def get_player_id(self):
         ''' Return the current player's id
