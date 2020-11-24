@@ -4,6 +4,8 @@ from training.PPO import PPO
 from training.training import Trainer
 from training.utils import ParamDict
 from utils import plot_learning_curve
+from matplotlib import pyplot as plt
+import numpy as np
 from cs566xpertcommander.the_game import Env
 from training.policy import Policy
 
@@ -44,10 +46,20 @@ useHints=True
 rewards, deck_ends = trainer.train(env, rollouts, policy, params, use_hints=useHints)
 print("Training completed!")
 
+# torch.save(policy.actor.state_dict(), './models/policy.pt')
+# policy.actor.load_state_dict(torch.load('./models/policy.pt'))
+
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
     env.run_agents(agents, useHints)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
+
+fig, ax = plt.subplots(figsize=(10, 7)) 
+bins = np.linspace(0, 100, 11)
+ax.hist(evaluations, bins=bins) 
+
+plt.show()
+
 plot_learning_curve(evaluations, num_iter)

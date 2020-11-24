@@ -8,6 +8,8 @@ import logging
 from training.utils import ParamDict
 from training.training import Trainer
 from utils import plot_learning_curve
+from matplotlib import pyplot as plt
+import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -47,7 +49,8 @@ trainer = Trainer()
 rewards, success_rate = trainer.train(env, rollouts, policy, params)
 print("Training completed!")
 
-torch.save(policy.actor.state_dict(), './models/policy.pt')
+# torch.save(policy.actor.state_dict(), './models/policy.pt')
+# policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
 evaluations = []
 num_iter = 50
@@ -55,4 +58,11 @@ for i in range(num_iter):  # lets play 50 games
     env.run_PG(policy)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
+
+fig, ax = plt.subplots(figsize=(10, 7)) 
+bins = np.linspace(0, 100, 11)
+ax.hist(evaluations, bins=bins) 
+
+plt.show()
+
 plot_learning_curve(evaluations, num_iter)
