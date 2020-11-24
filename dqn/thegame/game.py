@@ -5,19 +5,13 @@ from rlcard.games.thegame import Dealer
 from rlcard.games.thegame import Player
 from rlcard.games.thegame import Round
 
-HANDSIZES = {
-    '1': 8,
-    '2': 7,
-    '3': 6  # 6 cards on hand for 3 or more players
-}
 
 class TheGame(object):
 
-    def __init__(self, num_players=1, deck_size=98, allow_step_back=False):
+    def __init__(self, allow_step_back=False):
         self.allow_step_back = allow_step_back
         self.np_random = np.random.RandomState()
-        self.num_players = num_players
-        self.deck_size = deck_size
+        self.num_players = 1
 
     def init_game(self):
         ''' Initialize players and state
@@ -29,7 +23,7 @@ class TheGame(object):
                 (int): Current player's id
         '''
         # Initalize payoffs
-        self.payoffs = [0 for _ in range(self.num_players)]
+        self.payoffs = [[] for _ in range(self.num_players)]
 
         # Initialize a dealer that can deal cards
         self.dealer = Dealer(self.np_random)
@@ -37,10 +31,9 @@ class TheGame(object):
         # Initialize one players to play the game
         self.players = [Player(i, self.np_random) for i in range(self.num_players)]
 
-        # deal hands based on num of players
-        self.hand_size = HANDSIZES[str(3 if self.num_players > 2 else self.num_players)]
+        # Deal 8 cards to player to prepare for the game
         for player in self.players:
-            self.dealer.deal_cards(player, self.hand_size)
+            self.dealer.deal_cards(player, 8)
 
         # Initialize a Round
         self.round = Round(self.dealer, self.num_players, self.np_random)
@@ -102,15 +95,26 @@ class TheGame(object):
         state['current_player'] = self.round.current_player
         return state
 
-    def get_payoffs(self):
+    def get_payoffs(self, state, next_state):
         ''' Return the payoffs of the game
 
         Returns:
             (list): Each entry corresponds to the payoff of one player
         '''
-        num_played_cards = len(self.round.played_cards)
-        self.payoffs[0] = [1 for i in range(num_played_cards-1)] + [-1]
+        
+        if len(next_state['legal_actions']) <= 8:
+            self.payoffs[self.round.current_player].append(-1)
+        else:
+            self.payoffs[self.round.current_player].append(1)
+        
         return self.payoffs
+
+    def get_playable_cards(self):
+        return self.round.get_playable_cards()
+
+    def get_played_cards(self):
+
+        return self.round.played_cards
 
     def get_legal_actions(self):
         ''' Return the legal actions for current player
@@ -129,15 +133,14 @@ class TheGame(object):
         '''
         return self.num_players
 
-    def get_action_num(self):
+    @staticmethod
+    def get_action_num():
         ''' Return the number of applicable actions
 
         Returns:
-            (int): The number of actions.
+            (int): The number of actions. There are 4*cards + 1 actions
         '''
-
-        # 4 decks and + 1 for pass action
-        return 4 * self.deck_size + 1
+        return 4 * 98 + 1
 
     def get_player_id(self):
         ''' Return the current player's id

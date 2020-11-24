@@ -15,49 +15,68 @@ with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space.json'), '
     ACTION_SPACE = json.load(file, object_pairs_hook=OrderedDict)
     ACTION_LIST = list(ACTION_SPACE.keys())
 
-def init_deck(deck_size=98):
-    ''' Initialize a standard deck of cards
-
-    Args:
-        deck_size (int): number of cards in the deck
+def init_deck():
+    ''' Initialize a standard deck of 98 cards
 
     Returns:
         (list): A list of Card object
     '''
-    rank_list = [str(i) for i in range(2, deck_size+2)]
+    rank_list = Card.rank
     res = [Card(rank) for rank in rank_list]
     return res
 
-def encode_card(plane, cards):
+
+def encode_hand(plane, hand):
     ''' Encode hand and represerve it into plane
 
     Args:
-        plane (np.array):  numpy array
-        cards (list): list of string of hand's card
+        plane (array):  numpy array
+        hand (list): list of string of hand's card
 
     Returns:
         (array):  numpy array
     '''
-    for card in cards:
-        # cards go from 2-99 so indices 0-97 represent them
-        card_index = int(card) - 2
-        plane[card_index] = 1
-    return plane
+    for index, card in enumerate(hand):
+        # card_index = int(card) - 1
+        # plane[card_index] = 1
+        plane[index] = int(card) / 100.0  # normalize to [0, 1]
+    plane.sort()
+    return None
+
+
 
 def encode_target(plane, targets):
     ''' Encode target and represerve it into plane
 
     Args:
-        plane (np.array): numpy array
-        targets(str): list of Cards from decks
+        plane (array): 50 numpy array
+        target(str): string of target card
 
     Returns:
-        (array): numpy array
+        (array): 50 numpy array
     '''
     for index, target in enumerate(targets):
-        target_index = int(target) - 1
-        plane[index, target_index] = 1
+        # target_index = int(target) - 1
+        # plane[index, target_index] = 1
+        plane[index] = int(target) / 100
     return plane
+
+def encode_card(plane, cards):
+    ''' Encode hand and represerve it into plane
+
+    Args:
+        plane (array):  numpy array
+        hand (list): list of string of hand's card
+
+    Returns:
+        (array):  numpy array
+    '''
+    for index, card in enumerate(cards):
+        card_index = int(card) - 2
+        plane[card_index] = 1
+    return plane
+
+
 
 def cards2list(cards):
     ''' Get the corresponding string representation of cards
@@ -70,18 +89,18 @@ def cards2list(cards):
     '''
     cards_list = []
     for card in cards:
-        cards_list.append(str(card))
+        cards_list.append(card.rank)
     return cards_list
 
 def targets2list(targets):
     ''' Get the corresponding string representation of cards
 
     Args:
-        targets (dict): dict of the 4 decks
+        cards (list): list of UnoCards objects
 
     Returns:
         (string): string representation of cards
     '''
-    targets_list = [str(targets['a1']), str(targets['a2']), str(targets['d1']), str(targets['d2'])]
+    targets_list = [targets['a1'].rank, targets['a2'].rank, targets['d1'].rank, targets['d2'].rank]
 
     return targets_list
