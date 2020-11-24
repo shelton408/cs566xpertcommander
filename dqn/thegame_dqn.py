@@ -6,9 +6,16 @@ from rlcard.agents import DQNAgentPytorch
 from rlcard.utils import set_global_seed, tournament
 from rlcard.utils import Logger
 
+DECK_SIZE = 98
+
 # Make environment
-env = rlcard.make('thegame', config={'seed': 0})
-eval_env = rlcard.make('thegame', config={'seed': 0})
+config = {
+    'seed': 0,
+    'deck_size': DECK_SIZE,
+    'single_agent_mode': False
+}
+env = rlcard.make('thegame', config=config)
+eval_env = rlcard.make('thegame', config=config)
 
 # Set the iterations numbers and how frequently we evaluate/save plot
 evaluate_every = 100
