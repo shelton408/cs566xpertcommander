@@ -11,7 +11,7 @@ from rlcard.games.thegame.card import TheGameCard as Card
 ROOT_PATH = rlcard.__path__[0]
 
 # a map of abstract action to its index and a list of abstract action
-with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space_50.json'), 'r') as file:
+with open(os.path.join(ROOT_PATH, 'games/thegame/jsondata/action_space.json'), 'r') as file:
     ACTION_SPACE = json.load(file, object_pairs_hook=OrderedDict)
     ACTION_LIST = list(ACTION_SPACE.keys())
 
@@ -39,7 +39,8 @@ def encode_card(plane, cards):
         (array):  numpy array
     '''
     for card in cards:
-        card_index = int(card) - 1
+        # cards go from 2-99 so indices 0-97 represent them
+        card_index = int(card) - 2
         plane[card_index] = 1
     return plane
 
@@ -47,11 +48,11 @@ def encode_target(plane, targets):
     ''' Encode target and represerve it into plane
 
     Args:
-        plane (array): 50 numpy array
-        target(str): string of target card
+        plane (np.array): numpy array
+        targets(str): list of Cards from decks
 
     Returns:
-        (array): 50 numpy array
+        (array): numpy array
     '''
     for index, target in enumerate(targets):
         target_index = int(target) - 1
@@ -69,18 +70,18 @@ def cards2list(cards):
     '''
     cards_list = []
     for card in cards:
-        cards_list.append(card.rank)
+        cards_list.append(str(card))
     return cards_list
 
 def targets2list(targets):
     ''' Get the corresponding string representation of cards
 
     Args:
-        cards (list): list of UnoCards objects
+        targets (dict): dict of the 4 decks
 
     Returns:
         (string): string representation of cards
     '''
-    targets_list = [targets['a1'].rank, targets['a2'].rank, targets['d1'].rank, targets['d2'].rank]
+    targets_list = [str(targets['a1']), str(targets['a2']), str(targets['d1']), str(targets['d2'])]
 
     return targets_list
