@@ -20,5 +20,13 @@ class TheGameDealer(object):
             player (object): The object of DoudizhuPlayer
             num (int): The number of cards to be dealed
         '''
-        for _ in range(num):
-            player.hand.append(self.deck.pop())
+        if not self.deck:
+            return
+
+        if len(self.deck) > num:
+            for _ in range(num):
+                player.hand.append(self.deck.pop())
+
+        else:
+            player.hand.extend(self.deck)
+            self.deck = []
