@@ -93,7 +93,7 @@ class TheGameRound(object):
         # and there are still cards in the deck, the game has been lost
         if not legal_actions \
                 and self.num_cards_played < self.min_move_size \
-                and self.dealer.deck:
+                and hand:
             self.is_over = True
 
         # if the player has played min number of cards, or does not have a hand, they may pass
