@@ -21,9 +21,10 @@ class RolloutStorage():
         self.rollout_size = rollout_size
         self.obs_size = obs_size
         self.action_size = 33
+        self.hint_size = 33
         self.reset()
 
-    def insert(self, step, done, action, log_prob, reward, obs, legal_actions, next_obs=None):
+    def insert(self, step, done, action, log_prob, reward, obs, legal_actions, hint, next_obs=None):
         '''
         Inserting the transition at the current step number in the environment.
         '''
@@ -34,6 +35,7 @@ class RolloutStorage():
         self.obs[step].copy_(obs)
         self.next_obs[step].copy_(next_obs)  # needed for DQN
         self.legal_actions[step].copy_(legal_actions)
+        self.hints[step].copy_(hint)
 
     def reset(self):
         '''
@@ -47,6 +49,7 @@ class RolloutStorage():
         self.obs = torch.zeros(self.rollout_size, self.obs_size)
         self.next_obs = torch.zeros(self.rollout_size, self.obs_size)
         self.legal_actions = torch.zeros(self.rollout_size, self.action_size)
+        self.hints = torch.zeros(self.rollout_size, self.hint_size)
 
     def compute_returns(self, gamma):
         '''
@@ -77,7 +80,7 @@ class RolloutStorage():
             elif get_next_obs:
                 yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.next_obs[indices]
             else:
-                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices]
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.hints[indices]
 
 
 #params: rollout_size default this to 100 so we play an entire game?, num_updates
@@ -101,7 +104,7 @@ class Trainer():
         env.init_game()
         return env.game.state, env.get_encoded_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
-    def train(self, env, rollouts_list, agent_list, params_list):
+    def train(self, env, rollouts_list, agent_list, params_list, use_hints=False):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
         rewards, deck_avgs = [], []
 
@@ -149,6 +152,8 @@ class Trainer():
                 action_list = [torch.tensor(32, dtype=torch.int32)] * num_agent
                 log_prob_list = [torch.tensor(32, dtype=torch.float32)] * num_agent
                 legal_actions_list = ([0] * 32 + [1]) * num_agent # can only skip turn
+                hints_tensor_list = [torch.zeros(33, dtype=torch.float32)] * num_agent
+
                 # for agent, rollouts, obs, next_obs, action, log_prob, legal_actions in \
                 #         zip(agent_list, rollouts_list, obs_list, next_obs_list, action_list, log_prob_list, legal_actions_list):
                 for a in range(num_agent):
@@ -161,7 +166,18 @@ class Trainer():
 
                     obs_list[a] = env.get_encoded_state()
                     obs_list[a] = torch.tensor(obs_list[a], dtype=torch.float32)
-                    action_list[a], log_prob_list[a] = agent_list[a].act(obs_list[a], legal_actions_list[a])
+
+                    if len(env.game.state['players']) <= 1:
+                        hints_tensor_list[a] = torch.zeros(33, dtype=torch.float32)
+                    else:
+                        pass
+                        #hints_tensor_list[a] = torch.tensor(env.game.state['hints'][1 - curr_player], dtype=torch.float32)
+
+                    if use_hints:
+                        # 1-curr_player for 2 player game
+                        action_list[a], log_prob_list[a] = agent_list[a].act(obs_list[a], legal_actions_list[a], hints_tensor_list[a])
+                    else:
+                        action_list[a], log_prob_list[a] = agent_list[a].act(obs_list[a], legal_actions_list[a])
 
                     if int(action_list[a]) <= len(legal_actions_list[a]) - 1:
                         state, next_player = env.step(action_list[a])
@@ -211,6 +227,7 @@ class Trainer():
                     rollouts_list[a].insert(round_idx, torch.tensor((done), dtype=torch.float32), action_list[a], log_prob_list[a],
                                     torch.tensor((reward), dtype=torch.float32), obs_list[a],
                                     torch.tensor(legal_actions_list[a]),
+                                    hints_tensor_list[a],
                                     torch.tensor(next_obs_list[a], dtype=torch.float32))
 
 
@@ -220,7 +237,10 @@ class Trainer():
             rollout_done_time = time.time()
 
             for agent, rollouts, params in zip(agent_list, rollouts_list, params_list):
-                agent.update(rollouts)
+                if use_hints:
+                    agent.update(rollouts, use_hints)
+                else:
+                    agent.update(rollouts)
                 rollouts.reset()
             update_done_time = time.time()
 
