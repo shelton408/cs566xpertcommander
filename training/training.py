@@ -8,6 +8,7 @@ import numpy as np
 from training.utils import AverageMeter, flatten
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 from torch.distributions.categorical import Categorical
+from utils import plot_learning_curve
 
 sys.path.append('../')
 from cs566xpertcommander.the_game import Env
@@ -19,9 +20,10 @@ class RolloutStorage():
         self.rollout_size = rollout_size
         self.obs_size = obs_size
         self.action_size = 33
+        self.hint_size = 33
         self.reset()
-
-    def insert(self, step, done, action, log_prob, reward, obs, legal_actions, next_obs=None):
+    
+    def insert(self, step, done, action, log_prob, reward, obs, legal_actions, hint, next_obs=None):
         '''
         Inserting the transition at the current step number in the environment.
         '''
@@ -30,8 +32,9 @@ class RolloutStorage():
         self.log_probs[step].copy_(log_prob)
         self.rewards[step].copy_(reward)
         self.obs[step].copy_(obs)
-        self.next_obs[step].copy_(next_obs)  # needed for DQN
         self.legal_actions[step].copy_(legal_actions)
+        self.hints[step].copy_(hint)
+        self.next_obs[step].copy_(next_obs)  # needed for DQN
 
     def reset(self):
         '''
@@ -43,8 +46,9 @@ class RolloutStorage():
         self.log_probs = torch.zeros(self.rollout_size, 1)
         self.rewards = torch.zeros(self.rollout_size, 1)
         self.obs = torch.zeros(self.rollout_size, self.obs_size)
-        self.next_obs = torch.zeros(self.rollout_size, self.obs_size)
         self.legal_actions = torch.zeros(self.rollout_size, self.action_size)
+        self.hints = torch.zeros(self.rollout_size, self.hint_size)
+        self.next_obs = torch.zeros(self.rollout_size, self.obs_size)
 
     def compute_returns(self, gamma):
         '''
@@ -71,43 +75,30 @@ class RolloutStorage():
             drop_last=True)
         for indices in sampler:
             if get_old_log_probs:
-                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.log_probs[indices]
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.log_probs[indices], self.hints[indices]
             elif get_next_obs:
                 yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.next_obs[indices]
             else:
-                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices]
-
+                yield self.actions[indices], self.returns[indices], self.obs[indices], self.legal_actions[indices], self.hints[indices]
 
 #params: rollout_size default this to 100 so we play an entire game?, num_updates
 class Trainer():
-    def __init__(self):#replace obs_size with state size
-        self.obs_size = 4
-
-    # def parse_state(self, state):
-    #     out = []
-    #     for k in state:
-    #         if not k == 'legal_actions':
-    #             out.append(state[k])
-    #     ret = list(flatten(out))
-    #     #this last part is not needed once we have a static state size
-    #     while(len(ret) < self.obs_size):
-    #         ret.append(0)
-    #     ret = ret[:self.obs_size]
-    #     return ret
 
     def reset_game(self, env):
         env.init_game()
         return env.game.state, env.get_encoded_state() #return state of first player as obs, if we allow agents to pick order somehow, this has to change
 
-    def train(self, env, rollouts, policy, params):
+    def train(self, env, rollouts, policy, params, use_hints=False):
         rollout_time, update_time = AverageMeter(), AverageMeter()  # Loggers
-        rewards, deck_avgs = [], []
+        rewards, deck_avgs, av_ds = [], [], []
 
         print("Training model with {} parameters...".format(policy.num_params))
 
         '''
         Training Loop
         '''
+        train_start_time = time.time()
+
         for j in range(params.num_updates):
             ## Initialization
             avg_eps_reward = AverageMeter()
@@ -138,24 +129,22 @@ class Trainer():
                 #action, log_prob = agents[state['current_player']].act(state)
                 curr_player = env.game.state['current_player']
                 original_legal_actions = env.game.state['legal_actions'][curr_player]
+
                 legal_actions = original_legal_actions
 
-                action, log_prob = policy.act(obs, legal_actions)
-                
-                if int(action) <= len(legal_actions) - 1:
-                    state, next_player = env.step(action)
+                if len(env.game.state['players']) <= 1:
+                    hints_tensor = torch.zeros(33, dtype=torch.float32)
                 else:
-                    raise ValueError('Action > length of legal actions')
+                    hints_tensor = torch.tensor(env.game.state['hints'][1 - curr_player], dtype=torch.float32)
 
-
-                # action = torch.argmax(rescaled_valid_prob)
-                # log_prob = torch.log(rescaled_valid_prob[action])
-                #obs, reward, done, info = self.env.step(action), info is useless to us since there is no success
-                # if action <= len(env.game.state['legal_actions'][0]) - 1:
-                #     game_state, next_player = env.step(action)
-                # else:
-                #     game_state, next_player = env.step(np.random.randint(0, len(env.game.state['legal_actions'][0])))
-                # action_tensor = torch.tensor(action, dtype=torch.float32)
+                if use_hints:
+                    action, log_prob = policy.act(obs, legal_actions, hints_tensor) # 1-curr_player for 2 player game
+                else:
+                    action, log_prob = policy.act(obs, legal_actions)
+                
+                if original_legal_actions[int(action)]:
+                    state, next_player = env.step(action)
+                    
                 obs = env.get_encoded_state()
 
                 if original_legal_actions[int(action)]:
@@ -163,17 +152,13 @@ class Trainer():
                     curr_eval = env.game.num_playable()
                     reward = (curr_eval - prev_eval)/5 + 1
                     prev_eval = curr_eval
-                    # if done:
-                    #     reward = 50 / env.game.num_playable()
-                    # else:
-                    #     reward = 0
                 else:
                     reward = -20
                 done = env.game.is_over()
 
                 rollouts.insert(step, torch.tensor((done), dtype=torch.float32), action, log_prob,
                                 torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions),
-                                torch.tensor(obs, dtype=torch.float32))
+                                hints_tensor, torch.tensor(obs, dtype=torch.float32))
 
                 if isinstance(policy, DuelDQN):
                     policy.total_t += 1
@@ -190,8 +175,10 @@ class Trainer():
             ################################# END OF YOUR CODE #################################
             
             rollout_done_time = time.time()
-
-            policy.update(rollouts)
+            if use_hints:
+                policy.update(rollouts, use_hints)
+            else:
+                policy.update(rollouts)
             update_done_time = time.time()
             rollouts.reset()
 
@@ -201,12 +188,16 @@ class Trainer():
             deck_avgs.append(avg_deck_end_size)
             rollout_time.update(rollout_done_time - start_time)
             update_time.update(update_done_time - rollout_done_time)
+            av_ds.append(av_deck_end_size)
             print('it {}: avgR: {:.3f} -- rollout_time: {:.3f}sec -- update_time: {:.3f}sec'.format(j, avg_eps_reward.avg, 
                                                                                                     rollout_time.avg, 
                                                                                                     update_time.avg))
+
+            if (j + 1) % params.plotting_iters == 0 and j != 0:
+                  plot_learning_curve(av_ds, j+1)
             # if j % self.params['plotting_iters'] == 0 and j != 0:
             #     plot_learning_curve(rewards, success_rate, params.num_updates)
             #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
             print('av deck size: {}, games_played: {}'.format(avg_deck_end_size, len(deck_end_sizes)))
+            
         return rewards, deck_avgs
-

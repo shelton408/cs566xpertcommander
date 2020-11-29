@@ -23,9 +23,9 @@ class ActorNetwork(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(num_inputs, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.Tanh(),
-            nn.Linear(hidden_dim, num_actions),
+            nn.Linear(hidden_dim // 2, num_actions)
             #nn.Softmax(dim = -1)
         )
         ################################# END OF YOUR CODE #################################
@@ -47,7 +47,8 @@ class Policy():
         self.policy_epochs = policy_epochs
         self.entropy_coef = entropy_coef
 
-    def act(self, state, legal_action, training=True):
+
+    def act(self, state, legal_action, hints=None, training=True):
         ############################## TODO: YOUR CODE BELOW ###############################
         ### 1. Run the actor network on the current state to get the action logits       ###
         ### 2. Build a Categorical(...) instance from the logits                         ###
@@ -61,17 +62,24 @@ class Policy():
         #rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
         logits = self.actor(state)
         mask = torch.tensor(legal_action, dtype=torch.float32)
+        
+        if hints is None:
+            hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
+        else:
+            hints_mask = torch.tensor([-10 if i == 1 else 5 for i in hints], dtype=torch.float32)
+            
         mask[mask == 0] = -500
         mask[mask != -500] = 0
-        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+        
+        legal_logits = torch.clamp(logits + mask + hints_mask, min=-50, max=50)
 
         dist = Categorical(logits = legal_logits)
         action = dist.sample() #sampling
-        log_prob = dist.log_prob(action)
+        log_prob = dist.log_prob(action.squeeze())
         ################################# END OF YOUR CODE #################################
         return action, log_prob
 
-    def evaluate_actions(self, state, action, legal_actions):
+    def evaluate_actions(self, state, action, legal_actions, hints=None):
         '''
         Evaluate the log probability of an action under the policy's output
         distribution for a given state.
@@ -92,16 +100,29 @@ class Policy():
         #probs = self.actor(state) * torch.abs(torch.tensor(legal_actions, dtype=torch.float32))
         logits = self.actor(state)
         mask = torch.tensor(legal_actions, dtype=torch.float32)
+
+        if hints is None:
+            hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
+        else:
+            if (hints==1).nonzero().shape[0]:
+                hints_mask = torch.tensor(hints, dtype=torch.float32)
+                hints_mask[hints_mask==1] = -10
+                hints_mask[hints_mask==0] = 5
+            else:
+                hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
+         
         mask[mask == 0] = -500
         mask[mask != -500] = 0
-        legal_logits = torch.clamp(logits + mask, min=-50, max=50)
+        
+        legal_logits = torch.clamp(logits + mask + hints_mask, min=-50, max=50)
+
         dist = Categorical(logits=legal_logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()
         ################################# END OF YOUR CODE #################################
         return log_prob.view(-1, 1), entropy.view(-1, 1)
 
-    def update(self, rollouts):
+    def update(self, rollouts, use_hints=False):
         '''
         Performing policy gradient update with maximum entropy regularization
 
@@ -111,9 +132,12 @@ class Policy():
         for epoch in range(self.policy_epochs):
             data = rollouts.batch_sampler(self.batch_size)
             for sample in data:
-                actions_batch, returns_batch, obs_batch, legal_actions_batch = sample
+                actions_batch, returns_batch, obs_batch, legal_actions_batch, hints = sample
                 # Compute Log probabilities and entropy for each sampled (state, action)
-                log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch)
+                if use_hints:
+                    log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch, hints)
+                else:
+                    log_probs_batch, entropy_batch = self.evaluate_actions(obs_batch, actions_batch, legal_actions_batch)
 
                 ############################## TODO: YOUR CODE BELOW ###############################
                 ### 4. Compute the mean loss for the policy update using action log-             ###
@@ -124,6 +148,7 @@ class Policy():
                 ####################################################################################
                 policy_loss = -torch.mean(torch.mul(log_probs_batch, returns_batch))
                 entropy_loss = -torch.mean(entropy_batch)
+                # games_played = len((rollouts.done==1).nonzero())
                 ################################# END OF YOUR CODE #################################
 
                 loss = policy_loss + self.entropy_coef * entropy_loss

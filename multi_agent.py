@@ -1,22 +1,16 @@
 import torch
-from training.policy import Policy
-from training.AC_policy import ACPolicy
-from training.PPO import PPO
 from training.instantiate import instantiate
-import sys
-import logging
-from training.utils import ParamDict
+from training.PPO import PPO
 from training.training import Trainer
+from training.utils import ParamDict
 from utils import plot_learning_curve
 from matplotlib import pyplot as plt
 import numpy as np
-import warnings
-import torch
-warnings.filterwarnings("ignore")
-
-sys.path.append('../')
 from cs566xpertcommander.the_game import Env
+from training.policy import Policy
 
+import warnings
+warnings.filterwarnings("ignore")
 
 # hyperparameters
 policy_params = ParamDict(
@@ -35,28 +29,30 @@ params = ParamDict(
     plotting_iters=100,    # interval for logging graphs and policy rollouts
     # env_name=Env(),  # we are using a tiny environment here for testing
 )
+rollouts, policy = instantiate(params)
+# policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
-NUM_OF_PLAYERS = 1
-
+NUM_OF_PLAYERS = 2
 config = {
     'num_players': NUM_OF_PLAYERS,
     'log_filename': './logs/policy_agent.log',
     'static_drawpile': False,
 }
-logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)
-
-rollouts, policy = instantiate(params)
+agents = [policy, policy]
+env.set_agents(agents)
 trainer = Trainer()
-rewards, deck_ends = trainer.train(env, rollouts, policy, params)
+useHints=True
+rewards, deck_ends = trainer.train(env, rollouts, policy, params, use_hints=useHints)
 print("Training completed!")
 
-torch.save(policy.actor.state_dict(), './models/policy.pt')
+# torch.save(policy.actor.state_dict(), './models/policy.pt')
+# policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
 evaluations = []
 num_iter = 50
 for i in range(num_iter):  # lets play 50 games
-    env.run_PG(policy)
+    env.run_agents(agents, useHints)
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 
@@ -66,5 +62,4 @@ ax.hist(evaluations, bins=bins)
 
 plt.show()
 
-plot_learning_curve(deck_ends, params.num_updates)
 plot_learning_curve(evaluations, num_iter)

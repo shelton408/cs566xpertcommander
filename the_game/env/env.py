@@ -55,23 +55,35 @@ class Env:
             agent_id = next_agent_id
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
         
-    def run_PG(self, policy):
+    def run_PG(self, policy, render=False):
         state, agent_id = self.init_game()
         obs = self.get_encoded_state()
         logging.info(' State for player {}: {}\n'.format(agent_id, str(state)))
+        actions, hands, drawpile = [], [], []
+
         while not self._is_over():
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
-            # action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
-            action_id, _ = policy.act(obs, original_legal_actions, training=False)
-            next_state, next_agent_id = self.step(action_id)
+            action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            if original_legal_actions[action_id]:
+                if render:
+                    actions.append(action_id)
+                    hands.append(self.game.state['hands'][curr_player])
+                next_state, next_agent_id = self.step(action_id)
+                if render:
+                    drawpile.append(len(self.game.state['drawpile']))
+            else:
+                next_state, next_agent_id = state, agent_id
             state = next_state
             agent_id = next_agent_id
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
-
-    def run_agents(self, agents):
+            
+        if render:
+            return actions, hands, drawpile
+            
+    def run_agents(self, agents, use_hints):
         self.set_agents(agents)
         state, agent_id = self.init_game()
         obs = self.get_encoded_state()
@@ -80,15 +92,19 @@ class Env:
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
-            # action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
-            action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, training=False)
-            next_state, next_agent_id = self.step(action_id)
+            if use_hints:
+                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions], self.game.state['hints'][1 - curr_player])
+            else:
+                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            if original_legal_actions[action_id]:
+                next_state, next_agent_id = self.step(action_id)
+            else:
+                next_state, next_agent_id = state, agent_id
             state = next_state
             agent_id = next_agent_id
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
-
-
+            
     def _get_legal_actions(self):
         return self.game.get_legal_actions()
 
@@ -134,8 +150,17 @@ class Env:
         # desc_disc[discard_decks[2:]] = 1
 
 
-        unplayed_cards = np.ones(num_cards)
-        unplayed_cards[self.game.state['played_cards'] - 2] = 0
+        unplayed_cards = np.ones(num_cards) * 0.1
+        for i in range(num_cards):
+            if not self.game._can_be_played(i+2):
+                unplayed_cards[i] = 0
+        played_cards = np.array(self.game.state['played_cards'] - 2, dtype=int)
+        # with open('debug.txt', 'w') as f:
+        #     f.write(str(played_cards))
+        #     f.write(str(', '))
+        #     f.write(str(type(played_cards)))
+        #     f.write('\n')
+        unplayed_cards[played_cards] = 0
         encoded_state = np.concatenate((hand, discard_decks, unplayed_cards), axis=None)
         return encoded_state
 
