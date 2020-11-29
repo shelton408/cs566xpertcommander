@@ -47,7 +47,8 @@ class Policy():
         self.policy_epochs = policy_epochs
         self.entropy_coef = entropy_coef
 
-    def act(self, state, legal_action, hints=None):
+
+    def act(self, state, legal_action, hints=None, training=True):
         ############################## TODO: YOUR CODE BELOW ###############################
         ### 1. Run the actor network on the current state to get the action logits       ###
         ### 2. Build a Categorical(...) instance from the logits                         ###
@@ -61,11 +62,17 @@ class Policy():
         #rescaled_valid_prob = valid_prob / torch.sum(valid_prob) #rescaled
         logits = self.actor(state)
         mask = torch.tensor(legal_action, dtype=torch.float32)
+        
         if hints is None:
             hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
         else:
             hints_mask = torch.tensor([-10 if i == 1 else 5 for i in hints], dtype=torch.float32)
+            
+        mask[mask == 0] = -500
+        mask[mask != -500] = 0
+        
         legal_logits = torch.clamp(logits + mask + hints_mask, min=-50, max=50)
+
         dist = Categorical(logits = legal_logits)
         action = dist.sample() #sampling
         log_prob = dist.log_prob(action.squeeze())
@@ -93,6 +100,7 @@ class Policy():
         #probs = self.actor(state) * torch.abs(torch.tensor(legal_actions, dtype=torch.float32))
         logits = self.actor(state)
         mask = torch.tensor(legal_actions, dtype=torch.float32)
+
         if hints is None:
             hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
         else:
@@ -102,7 +110,12 @@ class Policy():
                 hints_mask[hints_mask==0] = 5
             else:
                 hints_mask = torch.zeros(mask.shape, dtype=torch.float32)
+         
+        mask[mask == 0] = -500
+        mask[mask != -500] = 0
+        
         legal_logits = torch.clamp(logits + mask + hints_mask, min=-50, max=50)
+
         dist = Categorical(logits=legal_logits)
         log_prob = dist.log_prob(action.squeeze())
         entropy = dist.entropy()

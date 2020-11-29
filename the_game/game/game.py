@@ -157,11 +157,7 @@ class Game:
 
 
     def step(self, action_id):
-        # if not self.state['legal_actions'][self.state['current_player']][action_id]:
-        #     print('ILLEGAL MOVE CHOSEN')
-        #     return (self.state, self.state['current_player'])
-        # else:
-        
+
         action = (action_id//4, action_id % 4)
         if action_id == 32:
             action = (-1,-1)

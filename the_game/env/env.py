@@ -10,7 +10,7 @@ class Env:
     '''
 
     def __init__(self, config):
-        is_static_drawpile = 'static_drawpile' in config
+        is_static_drawpile = config['static_drawpile']
 
         if 'total_num_cards' in config:
             self.game = Game(config['num_players'], num_cards=config['total_num_cards'], is_static_drawpile=is_static_drawpile)
@@ -104,8 +104,7 @@ class Env:
             agent_id = next_agent_id
             obs = self.get_encoded_state()
             logging.info(' State for player {}: {}\nEvaluation: {}\n'.format(agent_id, str(state), str(self.eval())))
-
-
+            
     def _get_legal_actions(self):
         return self.game.get_legal_actions()
 
