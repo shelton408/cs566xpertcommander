@@ -65,7 +65,7 @@ class Env:
             obs = torch.tensor(obs, dtype=torch.float32)
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
-            action_id, _ = policy.act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+            action_id, _ = policy.act(obs, original_legal_actions)
             if original_legal_actions[action_id]:
                 if render:
                     actions.append(action_id)
@@ -93,9 +93,9 @@ class Env:
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
             if use_hints:
-                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions], self.game.state['hints'][1 - curr_player])
+                action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, self.game.state['hints'][1 - curr_player])
             else:
-                action_id, _ = self.agents[agent_id].act(obs, [-500 if x==0 else 0 for x in original_legal_actions])
+                action_id, _ = self.agents[agent_id].act(obs, original_legal_actions)
             if original_legal_actions[action_id]:
                 next_state, next_agent_id = self.step(action_id)
             else:

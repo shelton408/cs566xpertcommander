@@ -7,7 +7,7 @@ import sys
 import logging
 from training.utils import ParamDict
 from training.training import Trainer
-from utils import plot_learning_curve
+from utils import plot_learning_curve, plot_testing
 from matplotlib import pyplot as plt
 import numpy as np
 import warnings
@@ -60,11 +60,13 @@ for i in range(num_iter):  # lets play 50 games
     evaluations.append(env.get_num_cards_in_drawpile())
 print('GAME OVER!')
 
-fig, ax = plt.subplots(figsize=(10, 7)) 
 bins = np.linspace(0, 100, 11)
-ax.hist(evaluations, bins=bins) 
-
+plt.hist(evaluations, bins=bins) 
+plt.title('Histogram of played games')
+plt.xlabel('drawpile size')
+plt.ylabel('no of games')
+plt.ylim([0, 100])
+plt.grid('on')
 plt.show()
 
-plot_learning_curve(deck_ends, params.num_updates)
-plot_learning_curve(evaluations, num_iter)
+plot_testing(evaluations, num_iter)
