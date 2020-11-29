@@ -13,6 +13,7 @@ import numpy as np
 import warnings
 import torch
 warnings.filterwarnings("ignore")
+import pickle
 
 sys.path.append('../')
 from cs566xpertcommander.the_game import Env
@@ -49,6 +50,11 @@ env = Env(config)
 rollouts, policy = instantiate(params)
 trainer = Trainer()
 rewards, deck_ends = trainer.train(env, rollouts, policy, params)
+
+my_dict = {'single_agent': deck_ends}
+with open('pickle_files/single_agent.pickle', 'wb') as f:
+    pickle.dump(my_dict, f)
+    
 print("Training completed!")
 
 torch.save(policy.actor.state_dict(), './models/policy.pt')
@@ -65,8 +71,7 @@ plt.hist(evaluations, bins=bins)
 plt.title('Histogram of played games')
 plt.xlabel('drawpile size')
 plt.ylabel('no of games')
-plt.ylim([0, 100])
-plt.grid('on')
+plt.ylim([0, 50])
 plt.show()
 
 plot_testing(evaluations, num_iter)

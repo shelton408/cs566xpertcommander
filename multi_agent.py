@@ -3,11 +3,12 @@ from training.instantiate import instantiate
 from training.PPO import PPO
 from training.training import Trainer
 from training.utils import ParamDict
-from utils import plot_learning_curve
+from utils import plot_learning_curve, plot_testing
 from matplotlib import pyplot as plt
 import numpy as np
 from cs566xpertcommander.the_game import Env
 from training.policy import Policy
+import pickle
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -44,9 +45,14 @@ env.set_agents(agents)
 trainer = Trainer()
 useHints=True
 rewards, deck_ends = trainer.train(env, rollouts, policy, params, use_hints=useHints)
+
+my_dict = {'multi_agent2': deck_ends}
+with open('pickle_files/multi_agent2.pickle', 'wb') as f:
+    pickle.dump(my_dict, f)
+
 print("Training completed!")
 
-# torch.save(policy.actor.state_dict(), './models/policy.pt')
+torch.save(policy.actor.state_dict(), './models/policy_m2.pt')
 # policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
 evaluations = []
@@ -61,8 +67,7 @@ plt.hist(evaluations, bins=bins)
 plt.title('Histogram of played games')
 plt.xlabel('drawpile size')
 plt.ylabel('no of games')
-plt.ylim([0, 100])
-plt.grid('on')
+plt.ylim([0, 50])
 plt.show()
 
 plot_testing(evaluations, num_iter)
