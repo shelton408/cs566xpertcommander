@@ -33,8 +33,8 @@ class Game:
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
-            'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []],
+            'hints': [[], [], [], [], []],  # Basic hint function added
+            'legal_actions': [[], [], [], [], []],
             'last_action': ()
         }
 
@@ -63,8 +63,8 @@ class Game:
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
-            'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []],
+            'hints': [[], [], [], [], []],  # Basic hint function added
+            'legal_actions': [[], [], [], [], []],
             'last_action': ()
         }
         self.state['players'] = list(range(self.num_players))
@@ -85,6 +85,8 @@ class Game:
 
             # self.state['hands'] = np.insert(self.state['hands'], hand, axis=1)
             self.state['hands'].append(hand)
+            while self.state['hands'][idx].shape[0] < 8:
+                self.state['hands'][idx]  = np.append([0], self.state['hands'][idx])
             self.state['legal_actions'][idx] = self.get_legal_actions(idx)
 
         # Check who has the best starting hand
@@ -127,9 +129,21 @@ class Game:
                 isAscending = True if d_id in [0, 1] else False
                 if c_value and self._is_legal_move(d_value, c_value, isAscending):
                     one_hot.append(1)
+                    if isAscending:
+                        if (c_value <= self.state['decks'][d_id] + 2) or (c_value == self.state['decks'][d_id] - 10):
+                            self.state['hints'][agent_id].append(1)
+                        else:
+                            self.state['hints'][agent_id].append(0)
+                    else:
+                        if (c_value >= self.state['decks'][d_id] - 2) or (c_value == self.state['decks'][d_id] + 10):
+                            self.state['hints'][agent_id].append(1)
+                        else:
+                            self.state['hints'][agent_id].append(0)
+                    
                     legal_actions.append((c_id, d_id))
                 else:
                     one_hot.append(0)
+                    self.state['hints'][agent_id].append(0)
         # while len(one_hot) < self.state['handsize']*4:
         #     one_hot.append(0)
         if self.state['num_moves_taken'] >= self.minMoveSize:
@@ -137,18 +151,16 @@ class Game:
             one_hot.append(1)
         else:
             one_hot.append(0)
-
+        
+        self.state['hints'][agent_id].append(0)
         return one_hot
 
 
     def step(self, action_id):
-        if not self.state['legal_actions'][self.state['current_player']][action_id]:
-            return (self.state, self.state['current_player'])
-        else:
-            action = (action_id//4, action_id % 4)
-            # if action_id == self.state['handsize']*4:
-            if action_id == 32:
-                action = (-1,-1)
+
+        action = (action_id//4, action_id % 4)
+        if action_id == 32:
+            action = (-1,-1)
 
         if action == (-1, -1):  # End of turn action
             new_cards = self.draw(self.state['num_moves_taken'])
@@ -159,6 +171,7 @@ class Game:
             # have played all their cards.
             next_id = self.state['players'].index(self.state['current_player']) + 1
             self.state['current_player'] = self.state['players'][next_id] if next_id < self.num_players else 0
+            self.state['hints'] = [[], [], [], [], []]
             self.get_all_legal_actions()
             self.state['last_action'] = action
             return (self.state, self.state['current_player'])
@@ -171,6 +184,7 @@ class Game:
 
             self.state['hands'][self.state['current_player']] = np.delete(self.state['hands'][self.state['current_player']], card_id)
             self.state['num_moves_taken'] += 1
+            self.state['hints'] = [[], [], [], [], []]
             self.get_all_legal_actions()
             self.state['last_action'] = action
             logging.info(' State for player {}: {}\nEvaluation: {}\nLast Card(s) played{}\n'.format(self.state['current_player'], str(self.state), str(self.drawpile_eval()), action))
