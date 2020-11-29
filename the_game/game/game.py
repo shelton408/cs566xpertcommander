@@ -33,8 +33,8 @@ class Game:
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
-            'hints': [[], [], [], []],  # Not implemented yet
-            'legal_actions': [[], [], [], []],
+            'hints': [[], [], [], [], []],  # Basic hint function added
+            'legal_actions': [[], [], [], [], []],
             'last_action': ()
         }
 
@@ -63,8 +63,8 @@ class Game:
             'played_cards': np.array([], dtype=int),
             'decks': np.array([], dtype=int),
             'hands': [],
-            'hints': [[], [], [], []],  # Basic hint function added
-            'legal_actions': [[], [], [], []],
+            'hints': [[], [], [], [], []],  # Basic hint function added
+            'legal_actions': [[], [], [], [], []],
             'last_action': ()
         }
         self.state['players'] = list(range(self.num_players))
@@ -171,7 +171,7 @@ class Game:
             # have played all their cards.
             next_id = self.state['players'].index(self.state['current_player']) + 1
             self.state['current_player'] = self.state['players'][next_id] if next_id < self.num_players else 0
-            self.state['hints'] = [[], [], [], []]
+            self.state['hints'] = [[], [], [], [], []]
             self.get_all_legal_actions()
             self.state['last_action'] = action
             return (self.state, self.state['current_player'])
@@ -184,7 +184,7 @@ class Game:
 
             self.state['hands'][self.state['current_player']] = np.delete(self.state['hands'][self.state['current_player']], card_id)
             self.state['num_moves_taken'] += 1
-            self.state['hints'] = [[], [], [], []]
+            self.state['hints'] = [[], [], [], [], []]
             self.get_all_legal_actions()
             self.state['last_action'] = action
             logging.info(' State for player {}: {}\nEvaluation: {}\nLast Card(s) played{}\n'.format(self.state['current_player'], str(self.state), str(self.drawpile_eval()), action))
