@@ -46,7 +46,7 @@ dueling_dqn_params = ParamDict(
     epsilon_decay_steps= int(0.8 * 5000 * 100)  # get to the final epsilon after 80% of training
 )
 dqn_agent_params = ParamDict(
-    policy_params=policy_params,
+    policy_params=dueling_dqn_params,
     rollout_size=5000,     # number of collected rollout steps per policy update
     num_updates=100,       # number of training policy iterations
     discount=0.999,        # discount factor
@@ -76,8 +76,8 @@ trainer = Trainer()
 rewards, deck_ends = trainer.train(env, rollouts_list, agents_list, params_list)
 print("Training completed!")
 
-torch.save(policy.actor.state_dict(), './models/multi_policy.pt')
-torch.save(dqn.Q.state_dict(), './models/multi_dqn.pt')
+torch.save(policy.actor.state_dict(), 'models/policy_joint.pt')
+torch.save(dqn.Q.state_dict(), 'models/dueling_dqn_joint.pt')
 
 plot_learning_curve(deck_ends, len(deck_ends))
 
