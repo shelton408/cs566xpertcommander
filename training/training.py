@@ -13,6 +13,7 @@ sys.path.append('../')
 from cs566xpertcommander.the_game import Env
 
 from training.duel_dqn import DuelDQN
+from training.double_dqn import DoubleDQN
 
 class RolloutStorage():
     def __init__(self, rollout_size, obs_size): #rollout size determines the number of turns taken per rollout
@@ -175,7 +176,7 @@ class Trainer():
                                 torch.tensor((reward), dtype=torch.float32), prev_obs, torch.tensor(legal_actions),
                                 torch.tensor(obs, dtype=torch.float32))
 
-                if isinstance(policy, DuelDQN):
+                if isinstance(policy, DuelDQN) or isinstance(policy, DoubleDQN):
                     policy.total_t += 1
 
                 prev_obs = torch.tensor(obs, dtype=torch.float32)
