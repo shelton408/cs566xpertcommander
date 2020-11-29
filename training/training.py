@@ -188,7 +188,7 @@ class Trainer():
             deck_avgs.append(avg_deck_end_size)
             rollout_time.update(rollout_done_time - start_time)
             update_time.update(update_done_time - rollout_done_time)
-            av_ds.append(av_deck_end_size)
+            av_ds.append(avg_deck_end_size)
             print('it {}: avgR: {:.3f} -- rollout_time: {:.3f}sec -- update_time: {:.3f}sec'.format(j, avg_eps_reward.avg, 
                                                                                                     rollout_time.avg, 
                                                                                                     update_time.avg))
