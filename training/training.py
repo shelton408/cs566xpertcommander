@@ -136,7 +136,9 @@ class Trainer():
                 if len(env.game.state['players']) <= 1:
                     hints_tensor = torch.zeros(33, dtype=torch.float32)
                 else:
-                    hints_tensor = torch.tensor(env.game.state['hints'][1 - curr_player], dtype=torch.float32)
+                    next_player = curr_player + 1
+                    next_player = next_player if next_player < env.game.num_players else 0
+                    hints_tensor = torch.tensor(env.game.state['hints'][next_player], dtype=torch.float32)
 
                 if use_hints:
                     action, log_prob = policy.act(obs, legal_actions, hints_tensor) # 1-curr_player for 2 player game
@@ -199,6 +201,6 @@ class Trainer():
             # if j % self.params['plotting_iters'] == 0 and j != 0:
             #     plot_learning_curve(rewards, success_rate, params.num_updates)
             #     log_policy_rollout(policy, params['env_name'], pytorch_policy=True)
-            print('av deck size: {}, games_played: {}'.format(avg_deck_end_size, len(deck_end_sizes)))
+            print('av deck size: {:.3f}, games_played: {}'.format(avg_deck_end_size, len(deck_end_sizes)))
             
         return rewards, deck_avgs

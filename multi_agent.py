@@ -46,13 +46,13 @@ trainer = Trainer()
 useHints=True
 rewards, deck_ends = trainer.train(env, rollouts, policy, params, use_hints=useHints)
 
-my_dict = {'multi_agent2': deck_ends}
-with open('pickle_files/multi_agent2.pickle', 'wb') as f:
+my_dict = {'multi_agent3': deck_ends}
+with open('pickle_files/multi_agent3.pickle', 'wb') as f:
     pickle.dump(my_dict, f)
 
 print("Training completed!")
 
-torch.save(policy.actor.state_dict(), './models/policy_m2.pt')
+torch.save(policy.actor.state_dict(), './models/policy_m3.pt')
 # policy.actor.load_state_dict(torch.load('./models/policy.pt'))
 
 evaluations = []
