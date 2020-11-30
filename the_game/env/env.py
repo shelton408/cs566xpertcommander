@@ -93,7 +93,9 @@ class Env:
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
             if use_hints:
-                action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, self.game.state['hints'][1 - curr_player])
+                next_player = curr_player + 1
+                next_player = next_player if next_player < self.game.num_players else 0
+                action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, self.game.state['hints'][next_player])
             else:
                 action_id, _ = self.agents[agent_id].act(obs, original_legal_actions)
             if original_legal_actions[action_id]:
