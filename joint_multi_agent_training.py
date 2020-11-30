@@ -107,10 +107,10 @@ print("Training completed!")
 
 # torch.save(policy.actor.state_dict(), 'models/policy_joint.pt')
 # torch.save(dqn.Q.state_dict(), 'models/dueling_dqn_joint.pt')
-torch.save(ppo1.actor.state_dict(), 'models/policy_joint.pt')
-torch.save(ppo2.actor.state_dict(), 'models/policy_joint.pt')
-torch.save(ppo3.actor.state_dict(), 'models/policy_joint.pt')
-torch.save(ppo4.actor.state_dict(), 'models/policy_joint.pt')
+torch.save(ppo1.actor.state_dict(), 'models/policy_joint1.pt')
+torch.save(ppo2.actor.state_dict(), 'models/policy_joint2.pt')
+torch.save(ppo3.actor.state_dict(), 'models/policy_joint3.pt')
+torch.save(ppo4.actor.state_dict(), 'models/policy_joint4.pt')
 
 my_dict = {'joint_agent': deck_ends}
 with open('pickle_files/ppo_agent_joint_train_4p.pickle', 'wb') as f:
