@@ -88,7 +88,8 @@ NUM_OF_PLAYERS = 1
 
 config = {
     'num_players': NUM_OF_PLAYERS,
-    'log_filename': './logs/policy_agent.log'
+    'log_filename': './logs/policy_agent.log',
+    'static_drawpile': False
 }
 logging.basicConfig(filename=config['log_filename'], filemode='w', level=logging.INFO)
 env = Env(config)

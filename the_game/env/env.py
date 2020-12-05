@@ -66,7 +66,7 @@ class Env:
             curr_player = self.game.state['current_player']
             original_legal_actions = self.game.state['legal_actions'][curr_player]
             action_id, _ = policy.act(obs, original_legal_actions)
-            if original_legal_actions[action_id]:
+            if original_legal_actions[int(action_id)]:
                 if render:
                     actions.append(action_id)
                     hands.append(self.game.state['hands'][curr_player])
@@ -98,7 +98,7 @@ class Env:
                 action_id, _ = self.agents[agent_id].act(obs, original_legal_actions, self.game.state['hints'][next_player])
             else:
                 action_id, _ = self.agents[agent_id].act(obs, original_legal_actions)
-            if original_legal_actions[action_id]:
+            if original_legal_actions[int(action_id)]:
                 next_state, next_agent_id = self.step(action_id)
             else:
                 next_state, next_agent_id = state, agent_id
